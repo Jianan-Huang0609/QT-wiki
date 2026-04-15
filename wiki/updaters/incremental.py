@@ -6,7 +6,7 @@ from datetime import datetime
 
 from Tool.contracts.canonical import load_canonical_document
 from Tool.pipelines.common import parsed_output_path
-from wiki.builders.bootstrap import PAGE_BLUEPRINTS, _build_summary, _collect_refs_for_document
+from wiki.builders.bootstrap import _build_summary, _collect_refs_for_document
 from wiki.models.page import PageChangeCandidate, PageSection, UpdateProposal
 from wiki.store.files import load_all_pages, save_page, save_proposal
 
@@ -56,11 +56,8 @@ def build_incremental_candidates(document_id: str, *, use_llm: bool = False) -> 
     pages = {page.page_id: page for page in load_all_pages()}
     candidates: list[PageChangeCandidate] = []
 
-    for blueprint in PAGE_BLUEPRINTS:
-        page = pages.get(blueprint["page_id"])
-        if page is None:
-            continue
-
+    for page in pages.values():
+        blueprint = _page_to_blueprint(page)
         refs = [ref for _, ref in _collect_refs_for_document(parsed, blueprint)]
         refs = [ref for ref in refs if (ref["document_id"], ref["fragment_id"]) not in _existing_ref_keys(page)]
         if not refs:
@@ -94,6 +91,33 @@ def build_incremental_candidates(document_id: str, *, use_llm: bool = False) -> 
         )
 
     return candidates
+
+
+def _page_to_blueprint(page) -> dict:
+    keywords = [page.title, *page.aliases]
+    for linked in page.linked_pages:
+        if linked != page.title:
+            keywords.append(linked)
+    section_keywords = [page.title, *page.aliases]
+    return {
+        "page_id": page.page_id,
+        "title": page.title,
+        "page_type": page.page_type,
+        "aliases": list(page.aliases),
+        "keywords": _dedupe_preserve_order(keywords),
+        "section_keywords": _dedupe_preserve_order(section_keywords),
+    }
+
+
+def _dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
 
 
 def _existing_ref_keys(page) -> set[tuple[str, str]]:

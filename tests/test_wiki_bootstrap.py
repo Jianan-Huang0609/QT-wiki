@@ -4,9 +4,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
-from wiki.models.page import PageSection, WikiPage
+from wiki.models.page import UpdateProposal
 
 
 def test_bootstrap_generates_pages(parsed_dir_with_docs):
@@ -38,19 +36,6 @@ def test_bootstrap_pages_have_refs(parsed_dir_with_docs, wiki_output_dirs):
                 assert "fragment_id" in ref
 
 
-def test_bootstrap_multi_source_merge(parsed_dir_with_docs):
-    with patch("wiki.builders.bootstrap.PARSED_DIR", parsed_dir_with_docs), \
-         patch("wiki.builders.bootstrap.save_page"):
-        from wiki.builders.bootstrap import bootstrap_pages
-
-        pages = bootstrap_pages(use_llm=False)
-
-        qms_page = next((p for p in pages if p.page_id == "质量管理体系"), None)
-        if qms_page is not None:
-            doc_ids = {ref["document_id"] for ref in qms_page.source_refs}
-            assert len(doc_ids) >= 1
-
-
 def test_bootstrap_page_structure(parsed_dir_with_docs):
     with patch("wiki.builders.bootstrap.PARSED_DIR", parsed_dir_with_docs), \
          patch("wiki.builders.bootstrap.save_page"):
@@ -76,31 +61,14 @@ def test_bootstrap_page_structure(parsed_dir_with_docs):
 def test_bootstrap_page_types(parsed_dir_with_docs):
     with patch("wiki.builders.bootstrap.PARSED_DIR", parsed_dir_with_docs), \
          patch("wiki.builders.bootstrap.save_page"):
-        from wiki.builders.bootstrap import bootstrap_pages, PAGE_BLUEPRINTS
+        from wiki.builders.bootstrap import bootstrap_pages
 
         pages = bootstrap_pages(use_llm=False)
         page_types = {p.page_type for p in pages}
         assert page_types.issubset({"policy", "concept", "process", "role"})
 
 
-def test_bootstrap_default_pages_exist():
-    from wiki.builders.bootstrap import PAGE_BLUEPRINTS
-
-    expected_ids = {
-        "医疗器械生产质量管理规范",
-        "质量管理体系",
-        "风险管理",
-        "机构与人员职责",
-        "文件和数据管理",
-        "设备管理",
-        "采购与原材料管理",
-        "产品放行",
-    }
-    actual_ids = {bp["page_id"] for bp in PAGE_BLUEPRINTS}
-    assert expected_ids == actual_ids
-
-
-def test_bootstrap_matches_fragments_by_section_title(tmp_dir):
+def test_bootstrap_discovers_topics_from_section_titles(tmp_dir):
     parsed_dir = tmp_dir / "parsed"
     parsed_dir.mkdir()
     (parsed_dir / "doc-section.json").write_text(
@@ -108,7 +76,7 @@ def test_bootstrap_matches_fragments_by_section_title(tmp_dir):
             {
                 "document": {
                     "document_id": "doc-section",
-                    "title": "医疗器械生产质量管理规范",
+                    "title": "质量管理规范",
                     "source_path": "Raw/policy.docx",
                     "file_name": "policy.docx",
                     "source_type": "docx",
@@ -120,27 +88,41 @@ def test_bootstrap_matches_fragments_by_section_title(tmp_dir):
                 "sections": [
                     {
                         "section_id": "sec-1",
-                        "title": "第五章设备",
+                        "title": "第五章 设备管理",
                         "level": 1,
                         "page_range": [],
                         "parent_id": None,
-                    }
+                    },
+                    {
+                        "section_id": "sec-2",
+                        "title": "第六章 文件和数据管理",
+                        "level": 1,
+                        "page_range": [],
+                        "parent_id": None,
+                    },
                 ],
                 "fragments": [
                     {
                         "fragment_id": "frag-1",
                         "section_id": "sec-1",
                         "fragment_type": "paragraph",
-                        "text": "第三十七条企业应当建立主要档案，并保留相关记录。",
+                        "text": "企业应当建立设备台账、维护计划和校准记录。",
                         "anchors": {"paragraph_index": 1},
-                    }
+                    },
+                    {
+                        "fragment_id": "frag-2",
+                        "section_id": "sec-2",
+                        "fragment_type": "paragraph",
+                        "text": "企业应当建立文件控制程序，并保存电子记录。",
+                        "anchors": {"paragraph_index": 2},
+                    },
                 ],
                 "tables": [],
                 "figures": [],
-                "terms": ["设备管理"],
+                "terms": ["设备管理", "文件和数据管理"],
                 "entities": [],
                 "parse_status": "parsed",
-                "source_anchors": [{"fragment_id": "frag-1", "anchors": {"paragraph_index": 1}}],
+                "source_anchors": [],
                 "errors": [],
             },
             ensure_ascii=False,
@@ -154,8 +136,85 @@ def test_bootstrap_matches_fragments_by_section_title(tmp_dir):
 
         pages = bootstrap_pages(use_llm=False)
 
-    equipment_page = next(page for page in pages if page.page_id == "设备管理")
-    assert len(equipment_page.source_refs) >= 1
+    page_ids = {page.page_id for page in pages}
+    assert "设备管理" in page_ids
+    assert "文件和数据管理" in page_ids
+
+
+def test_bootstrap_llm_discovery_returns_dynamic_topics(tmp_dir):
+    parsed_dir = tmp_dir / "parsed"
+    parsed_dir.mkdir()
+    (parsed_dir / "doc-llm.json").write_text(
+        json.dumps(
+            {
+                "document": {
+                    "document_id": "doc-llm",
+                    "title": "产品放行培训材料",
+                    "source_path": "Raw/training.pdf",
+                    "file_name": "training.pdf",
+                    "source_type": "pdf",
+                    "doc_type": "guidance",
+                    "language": "zh-CN",
+                    "checksum": "llm-test",
+                    "metadata": {},
+                },
+                "sections": [
+                    {
+                        "section_id": "sec-1",
+                        "title": "产品放行",
+                        "level": 1,
+                        "page_range": [1],
+                        "parent_id": None,
+                    }
+                ],
+                "fragments": [
+                    {
+                        "fragment_id": "frag-1",
+                        "section_id": "sec-1",
+                        "fragment_type": "paragraph",
+                        "text": "放行审核人应当确认检验记录和偏差处置结果。",
+                        "anchors": {"page": 1, "paragraph_index": 1},
+                    }
+                ],
+                "tables": [],
+                "figures": [],
+                "terms": ["产品放行", "放行审核人"],
+                "entities": [],
+                "parse_status": "parsed",
+                "source_anchors": [],
+                "errors": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    llm_payload = json.dumps(
+        {
+            "pages": [
+                {
+                    "title": "产品放行",
+                    "page_type": "process",
+                    "aliases": ["放行审核"],
+                    "keywords": ["产品放行", "放行审核人"],
+                    "section_keywords": ["产品放行"],
+                    "related_titles": [],
+                }
+            ]
+        },
+        ensure_ascii=False,
+    )
+
+    with patch("wiki.builders.bootstrap.PARSED_DIR", parsed_dir), \
+         patch("wiki.builders.bootstrap.ask_llm", return_value=llm_payload), \
+         patch("wiki.builders.bootstrap.save_page"):
+        from wiki.builders.bootstrap import build_page_candidates
+
+        candidates = build_page_candidates(use_llm=True)
+
+    assert len(candidates) == 1
+    assert candidates[0].page.page_id == "产品放行"
+    assert "wiki.builders.bootstrap._llm_discover_page_blueprints" in candidates[0].tool_trace
 
 
 def test_bootstrap_filters_pdf_header_and_catalog_noise():
@@ -205,4 +264,3 @@ def test_bootstrap_skips_failed_parsed_documents(tmp_dir):
         docs = _load_parsed_documents()
 
     assert docs == []
-
