@@ -1,0 +1,8 @@
+{
+  "provider": "azure_openai",
+  "azure_api_key": "455733a4c5b9494693d5e96461d23031",
+  "azure_endpoint": "https://apimgateway.siemens-healthineers.com",
+  "azure_deployment": "gpt-4o",
+  "model": "gpt-4o",
+  "api_version": "2024-02-01"
+}

@@ -1,0 +1,7 @@
+﻿__pycache__/
+*.pyc
+Tool/output/parsed/*.json
+wiki/output/pages/*.json
+wiki/output/proposals/*.json
+App/output/
+wiki/output/obsidian/

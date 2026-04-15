@@ -1,0 +1,18 @@
+{
+  "document_id": "doc-20260415140743-c60d5225",
+  "title": "医疗器械生产质量管理规范",
+  "file_name": "P020251106552222183224.docx",
+  "stored_path": "Raw\\P020251106552222183224.docx",
+  "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "source_system": "manual_cli",
+  "biz_domain": "generic",
+  "department": "unknown",
+  "owner": "unknown",
+  "confidentiality": "internal",
+  "version": "v1",
+  "checksum": "c60d52253f2de103c819921412448a71a51161e2210a8012b3fa94f430f67520",
+  "ingested_at": "2026-04-15T14:07:43",
+  "parse_status": "parsed",
+  "parsed_output": "C:\\project\\QT-wiki\\Tool\\output\\parsed\\doc-20260415140743-c60d5225.json",
+  "manifest_path": "Raw\\manifests\\doc-20260415140743-c60d5225.json"
+}
