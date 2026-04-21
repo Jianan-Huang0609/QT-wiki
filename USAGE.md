@@ -1,253 +1,314 @@
-﻿# QT Wiki 使用说明
+﻿# QT Wiki 使用文档
 
-## 推荐入口
+## 项目简介
 
-维护 Wiki：
+QT Wiki 是一个基于 LLM Wiki 范式的企业知识库系统，采用三层架构：
 
-```bash
-python -m App.agent
+- **Raw 层**：原文档（文章/论文/数据）
+- **Wiki 层**：结构化知识（摘要页/实体页/概念页/比较页/索引）
+- **Schema 层**：知识结构和智能体行为定义（`Agents.md`）
+
+**核心操作**：`Ingest 摄入` → `Query 查询` → `Lint 维护`
+
+---
+
+## 架构设计
+
+```
+Schema 层 (Agents.md)
+    ↓ 定义结构
+Wiki 层 (摘要/实体/概念/比较/Index)
+    ↓ 引用来源
+Raw 层 (原文档)
 ```
 
-启动聊天 API 与前端：
+### 页面类型
 
-```bash
-python -m App.api
-```
+| 类型 | 用途 | 示例 |
+|------|------|------|
+| **摘要页** (overview) | 对主题或文档的综合概述 | "医疗器械 GMP 规范 - 摘要" |
+| **实体页** (entity) | 具体的人、组织、产品、法规 | "GMP 法规 2024版" |
+| **概念页** (concept) | 抽象概念、方法论、原则 | "风险管理", "CAPA" |
+| **比较页** (comparison) | 对比两个或多个实体/概念 | "GMP vs ISO 13485" |
+| **索引页** (index) | 某类页面的目录和导航 | "所有法规实体索引" |
+| **问答页** (qa) | 优质问答的归档 | "Q: 什么是 CAPA?" |
 
-## Agent 工作流
-
-用户把文件上传到 `Raw/`，然后运行 Agent。Agent 会自动完成：
-
-1. 文档入库
-2. 文档解析
-3. 生成 Wiki 页面候选变更
-4. 审核闸门判断：大改动默认人工审核，小改动可自动推进
-5. 冲突扫描
-6. 页面发布
-7. 导出 Markdown 到 `wiki/output/obsidian/`
-
-## 人工审核闭环
-
-待审核提案会写入 `wiki/output/proposals/`。你可以：
-
-1. 先查看待审提案
-2. 人工确认后批准发布
-3. 再让 Chatbot 重新索引
-
-命令行批准：
-
-```bash
-python -m wiki.updaters.review_publish --proposal-id <proposal_id>
-```
-
-API 查看和批准：
-
-```bash
-curl http://127.0.0.1:8000/agent/proposals/pending
-curl -X POST http://127.0.0.1:8000/agent/proposals/<proposal_id>/approve
-```
-
-## Chatbot MVP 工作流
-
-Chatbot 的数据源不是 Markdown，而是：
-- `wiki/output/pages/*.json`
-- `Tool/output/parsed/*.json`
-
-处理链路：
-
-1. 先检索相关 Wiki 页面
-2. 再根据页面里的 `source_refs` 回查原始片段
-3. 返回结构化回答，并附带引用片段
-
-## 是否使用大语言模型
-
-项目已经接入大语言模型，但默认不开启。
-
-当前 LLM 的主要用途：
-- 在首次建库时为页面生成摘要
-- 在聊天接口中生成最终回答
-
-默认情况下：
-- `python -m App.agent` 不调用 LLM
-- `/chat/query` 里如果 `use_llm=false`，也不调用 LLM
-
-只有显式开启：
-
-```bash
-python -m App.agent --use-llm
-```
-
-或请求中传：
-
-```json
-{ "use_llm": true }
-```
-
-才会调用模型。
-
-## 如何查看调用过程
-
-### Agent 日志
-
-```bash
-python -m App.agent --log-level INFO
-python -m App.agent --use-llm --log-level DEBUG
-python -m App.agent --workflow-engine langgraph
-python -m App.agent --no-auto-approve-small-changes
-```
-
-### Chat API 日志
-
-```bash
-python -m App.api
-```
-
-日志会展示：
-- 文档是否被解析
-- 文档是否进入增量维护
-- 是否执行 bootstrap
-- 问题命中的页面和片段数量
-- 是否调用 LLM
-- LLM 请求开始、结束、失败
+---
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 环境准备
 
 ```bash
-pip install pytest pypdf requests openpyxl fastapi uvicorn
+# 安装依赖
+pip install pytest pypdf requests
 ```
 
 ### 2. 配置 LLM
 
-编辑 `config/azure_gpt4o_config.json`。
+编辑 `config/azure_gpt4o_config.json`：
 
-### 3. 上传文件并维护 Wiki
-
-```bash
-python -m App.agent
+```json
+{
+  "provider": "azure_openai",
+  "azure_api_key": "your-api-key",
+  "azure_endpoint": "https://your-endpoint.com",
+  "azure_deployment": "gpt-4o",
+  "model": "gpt-4o"
+}
 ```
 
-或通过 API 上传并自动触发 Agent：
+---
+
+## 三大核心操作
+
+### 一、Ingest 摄入
+
+将原文档转换为 Wiki 页面，**包含人工讨论环节**。
 
 ```bash
-curl -X POST http://127.0.0.1:8000/agent/upload \
-  -F "file=@./Raw/你的文档.docx" \
-  -F "use_llm=false" \
-  -F "auto_publish_low_risk=true" \
-  -F "auto_approve_small_changes=true" \
-  -F "workflow_engine=langgraph"
-```
-
-### 4. 启动 Chat API
-
-```bash
-python -m App.api
-```
-
-### 5. 发起聊天请求
-
-```bash
-curl -X POST http://127.0.0.1:8000/chat/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "文件控制和电子记录有哪些要求？",
-    "use_llm": false,
-    "top_k_pages": 5,
-    "top_k_citations": 8
-  }'
-```
-
-## 常用命令
-
-维护 Wiki：
-
-```bash
-python -m App.agent
-python -m App.agent --use-llm
-python -m App.agent --log-level DEBUG
-python -m App.agent --force-reparse --force-reconcile
-python -m App.agent --workflow-engine langgraph
-python -m App.agent --no-auto-approve-small-changes
-```
-
-启动 API：
-
-```bash
-python -m App.api
-```
-
-手动重建聊天索引：
-
-```bash
-curl -X POST http://127.0.0.1:8000/chat/reindex
-```
-
-上传文件并自动维护：
-
-```bash
-curl -X POST http://127.0.0.1:8000/agent/upload \
-  -F "file=@./sample.pdf" \
-  -F "use_llm=false" \
-  -F "auto_publish_low_risk=true" \
-  -F "auto_approve_small_changes=true" \
-  -F "workflow_engine=auto"
-```
-
-查看待审核提案：
-
-```bash
-curl http://127.0.0.1:8000/agent/proposals/pending
-```
-
-批准提案：
-
-```bash
-curl -X POST http://127.0.0.1:8000/agent/proposals/<proposal_id>/approve
-```
-
-## 聊天接口返回字段
-
-- `answer`: 最终回答
-- `citations`: 引用片段列表
-- `matched_pages`: 命中的页面
-- `confidence`: 置信度
-- `used_llm`: 是否真的调用了 LLM
-- `question`: 原问题
-
-## 上传维护接口返回字段
-
-- `status`: 执行状态
-- `file_name`: 实际落盘文件名（位于 `Raw/`）
-- `stored_path`: 仓库相对路径
-- `run_id`: Agent 运行编号
-- `manifests_seen`: 本次入库文档数
-- `documents_parsed`: 本次解析文档数
-- `proposals_created`: 产生提案数
-- `pages_published`: 自动发布页面数
-- `pending_review_count`: 待人工审核提案数
-- `workflow_engine`: 实际使用的工作流引擎
-
-## 输出目录
-
-- `App/output/agent_state.json`: 记录文档是否已经被维护过
-- `App/output/runs/*.json`: 每次运行的结果摘要
-- `Tool/output/parsed/`: 解析结果
-- `wiki/output/pages/`: 页面结果
-- `wiki/output/proposals/`: 提案结果
-- `wiki/output/obsidian/`: 最终 Markdown 页面
-
-## 模块级命令
-
-```bash
+# 1. 文档入库（解析原文档）
 python -m Tool.pipelines.ingest --input Raw/
-python -m Tool.pipelines.parse --document-id <id>
-python -m wiki.builders.bootstrap --use-llm
-python -m wiki.updaters.incremental --document-id <id>
-python -m wiki.updaters.conflict_scan
-python -m wiki.updaters.review_publish --proposal-id <id>
-python -m wiki.exporters.obsidian
-python -m App.agent
-python -m App.api
+python -m Tool.pipelines.parse --document-id doc-xxx
+
+# 2. IngestAgent 分析文档，生成候选页面
+python -m App.agents.ingest_agent ingest doc-xxx
+
+# 3. 查看候选页面（人工讨论）
+python -m App.agents.ingest_agent list
+
+# 4. 人工确认候选
+python -m App.agents.ingest_agent approve <candidate_id>
+
+# 5. 或拒绝候选
+python -m App.agents.ingest_agent reject <candidate_id> "原因说明"
 ```
 
+**工作流**：
+1. LLM 读取原文档
+2. 提取关键信息（实体、概念、摘要）
+3. 生成候选页面保存到 `App/candidates/`
+4. **暂停，等待人工讨论和确认**
+5. 根据确认结果写入 Wiki
+
+---
+
+### 二、Query 查询
+
+向 Wiki 提问，获取综合回答，**可归档优质回答**。
+
+```bash
+# 交互式查询模式
+python -m App.agents.query_agent
+
+# 或单次查询
+python -m App.agents.query_agent "什么是 CAPA?"
+```
+
+**交互模式命令**：
+- 输入问题 → 获取回答
+- 输入 `archive <标题>` → 将最后回答归档为 Wiki 页面
+- 输入 `quit` → 退出
+
+**工作流**：
+1. 理解用户问题
+2. 搜索 Wiki 和 Raw
+3. 综合信息生成回答（带引用来源）
+4. **询问用户是否将好答案归档为 Wiki 页面**
+
+---
+
+### 三、Lint 维护
+
+定期健康检查，**生成报告并建议修复**。
+
+```bash
+# 运行完整健康检查
+python -m App.agents.lint_agent
+
+# 修复可自动修复的问题
+python -m App.agents.lint_agent fix
+
+# 试运行修复（不实际修改）
+python -m App.agents.lint_agent fix --dry-run
+```
+
+**检查项**：
+- **矛盾检测**：同一实体在不同页面的描述冲突
+- **过时检测**：页面超过 90 天未更新
+- **孤儿页**：没有入链的页面
+- **缺失引用**：页面没有 source_refs
+- **断裂链接**：指向不存在的页面
+
+**工作流**：
+1. 定期扫描全部页面
+2. 生成健康报告
+3. LLM 提出修复建议和新问题
+4. **等待人工确认后执行修复**
+
+---
+
+## 完整流程示例
+
+### 首次构建知识库
+
+```bash
+# 1. 准备原文档
+# 将 .docx / .pdf 文件放入 Raw/ 目录
+
+# 2. 文档入库和解析
+python -m Tool.pipelines.ingest --input Raw/
+python -m Tool.pipelines.parse --document-id doc-xxx
+
+# 3. IngestAgent 分析（生成候选）
+python -m App.agents.ingest_agent ingest doc-xxx
+
+# 4. 人工确认候选页面
+python -m App.agents.ingest_agent list
+python -m App.agents.ingest_agent approve candidate-xxxxx
+
+# 5. 同步到 Obsidian 查看
+python scripts/json_to_obsidian.py
+# 在 Obsidian 中打开 ObsidianVault 文件夹
+```
+
+### 日常查询和归档
+
+```bash
+# 启动交互式查询
+python -m App.agents.query_agent
+
+# [Q] 什么是风险管理?
+# [A] (置信度: 0.85)
+#     基于 Wiki 中的 3 个页面和 2 个原文档...
+# [提示] 输入 'archive <标题>' 将此回答归档为 Wiki 页面
+
+# [Q] archive 风险管理概述
+# [QueryAgent] 已归档为 Wiki 页面: risk-management-overview
+
+# [Q] quit
+```
+
+### 定期维护
+
+```bash
+# 运行健康检查
+python -m App.agents.lint_agent
+
+# 查看报告后，修复断裂链接
+python -m App.agents.lint_agent fix
+
+# 根据 LLM 建议，创建缺失的索引页
+python -m App.agents.query_agent
+# [Q] 请总结所有实体页面
+# [Q] archive 实体索引
+```
+
+---
+
+## 目录结构
+
+```
+QT-wiki/
+├── Agents.md                     # Schema 层：知识结构和智能体定义
+├── USAGE.md                      # 本文档
+│
+├── Raw/                          # Raw 层：原文档
+│   ├── manifests/                # 文档元数据
+│   └── *.docx, *.pdf            # 原始文件
+│
+├── Tool/                         # Tool 层：LLM 可调用的工具集
+│   ├── llm/                      # LLM 调用
+│   ├── parsers/                  # 文档解析器
+│   ├── normalizers/              # 文本清洗
+│   ├── contracts/                # 数据契约
+│   └── pipelines/                # 处理流程
+│
+├── wiki/                         # Wiki 层：知识页面
+│   ├── models/                   # 数据模型
+│   ├── builders/                 # 页面构建
+│   ├── updaters/                 # 增量更新
+│   ├── store/                    # 存储管理
+│   └── output/                   # 页面输出
+│       ├── pages/               # Wiki 页面
+│       └── proposals/           # 更新提案
+│
+├── App/                          # App 层：智能体
+│   ├── agents/                   # 三大智能体
+│   │   ├── ingest_agent.py      # IngestAgent
+│   │   ├── query_agent.py       # QueryAgent
+│   │   └── lint_agent.py        # LintAgent
+│   └── candidates/              # 候选页面（人工确认前）
+│
+├── ObsidianVault/                # Obsidian 仓库
+│   └── Wiki/                    # Markdown 页面
+│
+├── scripts/                      # 工具脚本
+│   └── json_to_obsidian.py      # 同步到 Obsidian
+│
+├── tests/                        # 测试套件
+└── config/                       # 配置文件
+```
+
+---
+
+## 命令速查表
+
+### Ingest 操作
+
+| 命令 | 功能 |
+|------|------|
+| `python -m Tool.pipelines.ingest --input Raw/` | 文档入库 |
+| `python -m Tool.pipelines.parse --document-id <id>` | 文档解析 |
+| `python -m App.agents.ingest_agent ingest <doc_id>` | 生成候选页面 |
+| `python -m App.agents.ingest_agent list` | 列出候选 |
+| `python -m App.agents.ingest_agent approve <id>` | 批准候选 |
+| `python -m App.agents.ingest_agent reject <id>` | 拒绝候选 |
+
+### Query 操作
+
+| 命令 | 功能 |
+|------|------|
+| `python -m App.agents.query_agent` | 交互式查询 |
+| `python -m App.agents.query_agent "问题"` | 单次查询 |
+
+### Lint 操作
+
+| 命令 | 功能 |
+|------|------|
+| `python -m App.agents.lint_agent` | 健康检查 |
+| `python -m App.agents.lint_agent fix` | 修复问题 |
+| `python -m App.agents.lint_agent fix --dry-run` | 试运行修复 |
+
+### 同步操作
+
+| 命令 | 功能 |
+|------|------|
+| `python scripts/json_to_obsidian.py` | 同步到 Obsidian |
+
+---
+
+## 关键设计原则
+
+1. **人机协作**：Ingest 和 Lint 的关键操作需要人工确认
+2. **渐进构建**：通过 Query 将优质回答归档，不断丰富 Wiki
+3. **Schema 演化**：`Agents.md` 由开发者和 LLM 共同维护
+4. **可追溯性**：所有 Wiki 页面必须引用 Raw 来源
+5. **持续维护**：定期运行 Lint 保持 Wiki 健康
+
+---
+
+## 测试验证
+
+```bash
+# 运行全部测试
+python -m pytest tests/ -v
+```
+
+---
+
+## 更多信息
+
+- Schema 定义: [Agents.md](Agents.md)
+- 架构说明: [README.md](README.md)
+- App 层设计: [App/README.md](App/README.md)

@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-4e17fc00",
+  "page_type": "concept",
+  "title": "采购与原材料管理",
+  "content": {
+    "summary": "采购与原材料管理确保采购的物料符合规定要求，并对供应商进行分类管理和审核。",
+    "keywords": [
+      "采购管理",
+      "原材料",
+      "供应商审核"
+    ],
+    "related_titles": [
+      "质量管理体系",
+      "生产管理"
+    ],
+    "aliases": [
+      "原材料管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.87,
+  "status": "approved"
+}

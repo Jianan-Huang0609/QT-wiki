@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-53b3c96c",
+  "page_type": "concept",
+  "title": "管理评审",
+  "content": {
+    "summary": "管理评审是对质量管理体系的适宜性、充分性和有效性进行定期评价的活动。",
+    "keywords": [
+      "管理评审",
+      "质量体系",
+      "改进"
+    ],
+    "related_titles": [
+      "内部审核",
+      "纠正措施与预防措施"
+    ],
+    "aliases": [
+      "评审"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103743-e6664545"
+  ],
+  "confidence": 0.85,
+  "status": "approved"
+}

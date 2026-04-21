@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-27c2f81c",
+  "page_type": "concept",
+  "title": "风险管理过程",
+  "content": {
+    "summary": "风险管理过程是识别、评估、控制和沟通质量风险的活动，贯穿产品生命周期。",
+    "keywords": [
+      "风险管理",
+      "质量风险",
+      "生命周期"
+    ],
+    "related_titles": [
+      "质量管理体系概述",
+      "过程方法"
+    ],
+    "aliases": [
+      "质量风险管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103743-e6664545"
+  ],
+  "confidence": 0.9,
+  "status": "approved"
+}

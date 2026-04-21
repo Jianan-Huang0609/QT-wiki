@@ -1,355 +1,225 @@
 ﻿# QT Wiki
 
-一个面向企业制度/质量体系文档的 Wiki 自动维护项目。当前仓库有两条主线能力：
+QT Wiki 是一个基于 LLM Wiki 范式的企业知识库系统，采用三层架构（Raw/Wiki/Schema），通过三个核心 Agent（Ingest/Query/Lint）实现文档摄入、知识查询和系统维护。
 
-1. `Agent`：把上传到 `Raw/` 的文档自动入库、解析、建库/增量更新、审核、发布、导出
-2. `Chatbot`：基于已发布 Wiki 页面和原始证据片段做检索问答，并返回引用来源
+## 架构概述
 
-## 现在这个项目怎么工作
+```
+Schema 层 (AGENTS.md)
+    ↓ 定义结构
+Wiki 层 (pages/*.json)
+    ↓ 引用来源
+Raw 层 (原始文档)
+```
 
-项目的核心不是“把文档直接丢给大模型问答”，而是先把文档沉淀成可维护的 Wiki，再让问答建立在 Wiki 和原始证据之上。
+- **Raw 层**：原始文档（docx/pdf/pptx/xlsx）和 manifest
+- **Wiki 层**：结构化知识页面（overview/entity/concept/comparison/index/qa）
+- **Schema 层**：知识结构和智能体行为定义（`AGENTS.md`）
 
-完整链路：
+## 当前真实功能
 
-1. 用户上传文件到 `Raw/`
-2. `App.agent` 调用 `Tool/` 下的入库与解析工具
-3. 解析结果写入 `Tool/output/parsed/`
-4. `App.agent_graph` 编排建库或增量更新流程
-5. `wiki.review` 判断哪些变更可以自动推进，哪些必须人工审核
-6. 已发布页面写入 `wiki/output/pages/`，待审核提案写入 `wiki/output/proposals/`
-7. 已发布页面导出到 `wiki/output/obsidian/`
-8. `App.chat` / `App.api` 基于已发布页面和原始片段做检索问答
+### 1. 文档处理工具
+- `Tool.document_processor`：统一的文档处理接口，将 Raw 文档解析为 LLM 可用的结构化内容
+
+### 2. 三大核心 Agent
+
+#### IngestAgent - 文档摄入
+- **交互式工作流**：自动发现待处理文档，批量处理，交互式审批
+- **智能页面生成**：使用 LLM 分析文档内容，自动生成候选 Wiki 页面
+- **人工确认机制**：候选页面需人工批准后才写入 Wiki
+- **自动索引更新**：批准页面后自动更新对应类型的索引
+
+#### QueryAgent - 知识查询
+- **全量 Wiki 检索**：将整个 Wiki 传给 LLM，由 LLM 自主决定检索内容
+- **智能回答生成**：基于完整 Wiki 内容生成准确回答
+- **自动归档**：优质问答可归档为新的 Wiki 页面
+
+#### LintAgent - 系统维护
+- **健康检查**：检测矛盾、过时页面、孤儿页、缺失引用、断裂链接
+- **LLM 深度分析**：使用 LLM 发现潜在问题并提出建议
+- **交互式修复**：人工确认后执行修复操作
+
+### 3. 底层工具（保留但非主线）
+- `Tool.pipelines.ingest`：文档入库
+- `Tool.pipelines.parse`：文档解析
+- `wiki.builders.bootstrap`：首次建库
+- `wiki.updaters.incremental`：增量更新
+- `wiki.updaters.conflict_scan`：冲突扫描
+- `wiki.updaters.publish`：页面发布
+
+## 数据流
+
+```text
+Raw/ 原始文件
+  -> Tool.document_processor 解析
+  -> IngestAgent 分析生成候选
+  -> 人工审批
+  -> wiki/output/pages/*.json
+  -> QueryAgent 全量检索回答
+```
 
 ## 目录结构
 
-### 根目录
-
-- `App/`: 应用入口。包含 Agent、Chatbot、API、前端页面
-- `Tool/`: 文档工具层。包含入库、解析、标准化、LLM 客户端
-- `wiki/`: Wiki 领域层。包含页面模型、建库器、更新器、审核器、导出器、索引器
-- `Raw/`: 原始上传文件目录，也是 Agent 默认扫描入口
-- `config/`: 大模型配置文件
-- `tests/`: 测试
-- `.obsidian/`: 本地 Obsidian 配置
-
-### App/
-
-- `App/agent.py`: Agent 主入口。负责入库、解析、调度、状态持久化
-- `App/agent_graph.py`: Agent 工作流编排。优先用 `LangGraph`，否则回退内置顺序流程
-- `App/api.py`: FastAPI 服务。提供聊天、上传、待审提案、批准提案接口
-- `App/chat.py`: Chatbot 编排层。负责本地检索、拼装引用、可选调用 LLM 生成最终回答
-- `App/web/`: 前端页面与静态资源
-- `App/output/agent_state.json`: Agent 文档维护状态
-- `App/output/runs/`: 每次 Agent 运行摘要
-
-### Tool/
-
-- `Tool/pipelines/ingest.py`: 扫描 `Raw/` 并生成 manifest
-- `Tool/pipelines/parse.py`: 根据文档类型调用解析器
-- `Tool/parsers/`: 各文件类型解析器，当前支持 `docx/pdf/pptx/xlsx`
-- `Tool/contracts/canonical.py`: 统一解析结果结构
-- `Tool/llm/client.py`: 大模型调用客户端
-- `Tool/output/parsed/`: 规范化后的解析结果
-
-### wiki/
-
-- `wiki/models/page.py`: `WikiPage`、`UpdateProposal` 等核心模型
-- `wiki/builders/bootstrap.py`: 首次建库候选页面生成
-- `wiki/updaters/incremental.py`: 增量候选变更生成
-- `wiki/review.py`: 审核闸门。决定自动发布还是人工审核
-- `wiki/updaters/conflict_scan.py`: 冲突扫描
-- `wiki/updaters/review_publish.py`: 人工批准提案并发布
-- `wiki/store/files.py`: 页面、提案、输出文件读写
-- `wiki/exporters/obsidian.py`: 导出 Obsidian Markdown
-- `wiki/index/local.py`: 本地检索索引
-- `wiki/output/pages/`: 已落盘页面 JSON
-- `wiki/output/proposals/`: 待审核或已发布提案 JSON
-- `wiki/output/obsidian/`: 导出的 Markdown 页面
-
-## Agent 用法
-
-### 最常用命令
-
-默认扫描 `Raw/` 并执行一次完整维护：
-
-```bash
-python -m App.agent
+```text
+QT-wiki/
+├── AGENTS.md              # Schema 层定义
+├── README.md              # 本文件
+├── USAGE.md               # 使用文档
+├── Raw/                   # 原始文档
+│   ├── manifests/         # 文档清单
+│   └── *.docx / *.pdf / *.pptx / *.xlsx
+├── Tool/                  # 工具层
+│   ├── document_processor.py  # 统一文档处理
+│   ├── contracts/         # 数据契约
+│   ├── llm/              # LLM 客户端
+│   ├── parsers/          # 文档解析器
+│   └── pipelines/        # 处理管道
+├── wiki/                  # Wiki 层
+│   ├── builders/         # 页面构建
+│   ├── models/           # 数据模型
+│   ├── output/pages/     # Wiki 页面
+│   ├── store/            # 存储接口
+│   └── updaters/         # 更新器
+├── App/                   # Agent 层
+│   └── agents/           # 三大智能体
+│       ├── ingest_agent.py
+│       ├── query_agent.py
+│       └── lint_agent.py
+└── tests/                 # 测试
 ```
 
-启用 LLM 参与摘要和审核：
+## 安装
 
 ```bash
-python -m App.agent --use-llm
+pip install pytest pypdf requests openpyxl
 ```
 
-强制重跑解析和维护：
+## LLM 配置
+
+默认配置文件：`config/azure_gpt4o_config.json`
+
+可通过环境变量覆盖：
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_DEPLOYMENT`
+- `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`
+
+## 快速开始
+
+### 1. 文档摄入（交互式）
 
 ```bash
-python -m App.agent --force-reparse --force-reconcile
+python -m App.agents.ingest_agent
 ```
 
-清空输出后干净重建：
+流程：
+1. 自动发现 `Raw/` 目录下的待处理文档
+2. 选择要处理的文档（支持批量）
+3. LLM 分析生成候选页面
+4. 交互式审批候选（批准/拒绝/跳过）
+
+### 2. 知识查询（交互式）
 
 ```bash
-python -m App.agent --clean-rebuild
+python -m App.agents.query_agent
 ```
 
-强制所有小改动也进入人工审核：
+流程：
+1. 加载整个 Wiki 知识库
+2. 输入问题
+3. LLM 基于完整 Wiki 内容回答
+4. 优质回答可归档为新的 Wiki 页面
+
+### 3. 系统维护
 
 ```bash
-python -m App.agent --no-auto-approve-small-changes
+python -m App.agents.lint_agent
 ```
 
-指定使用 LangGraph：
+## 命令参考
+
+### IngestAgent
 
 ```bash
-python -m App.agent --workflow-engine langgraph
+# 交互式工作流（推荐）
+python -m App.agents.ingest_agent
+
+# 非交互式（指定文档）
+python -m App.agents.ingest_agent ingest <document_id>
+python -m App.agents.ingest_agent list
+python -m App.agents.ingest_agent approve <candidate_id>
+python -m App.agents.ingent_agent reject <candidate_id> [原因]
 ```
 
-打开详细日志：
+### QueryAgent
 
 ```bash
-python -m App.agent --log-level DEBUG
+# 交互式查询
+python -m App.agents.query_agent
+
+# 单次查询
+python -m App.agents.query_agent "什么是质量管理体系？"
 ```
 
-### Agent 参数说明
-
-- `--input`: 输入文件或目录，默认是 `Raw/`
-- `--use-llm`: 启用大模型参与摘要生成和审核判断
-- `--force-reparse`: 即使已有解析结果，也重新解析
-- `--force-reconcile`: 即使文档 checksum 未变化，也重新执行 Wiki 维护
-- `--clean-rebuild`: 清空页面和提案输出后重建
-- `--no-auto-publish-low-risk`: 低风险变更不自动发布
-- `--no-auto-approve-small-changes`: 小范围低风险变更也必须人工审核
-- `--workflow-engine auto|langgraph|builtin`: 指定工作流引擎
-- `--skip-conflict-scan`: 跳过冲突扫描
-- `--skip-sync`: 跳过 Obsidian 导出
-- `--state-path`: 指定 Agent 状态文件路径
-- `--log-level`: 日志级别
-
-### Agent 默认行为
-
-`App.agent` 每次运行会做这些事：
-
-1. 清理 Office 临时文件残留
-2. 扫描 `Raw/` 并生成/更新 manifest
-3. 解析尚未解析的文档
-4. 如果还没有 Wiki 页面，则执行首次建库
-5. 如果已有 Wiki 页面，则对变更文档执行增量维护
-6. 进入审核闸门
-7. 自动发布可以放行的页面
-8. 生成待人工审核提案
-9. 执行冲突扫描
-10. 导出 Markdown 到 `wiki/output/obsidian/`
-11. 记录运行摘要到 `App/output/runs/`
-
-## Agent 审核机制
-
-当前 Agent 不是直接改 Wiki，而是先生成候选变更，再审核：
-
-1. 候选页面或候选增量变更生成
-2. `wiki.review` 做规则审核
-3. 如果开启 `--use-llm`，再叠加 LLM 审核意见
-4. 两边结果保守合并
-5. 自动通过的变更直接发布
-6. 其余变更写入 proposal，等待人工审核
-
-### 默认会进入人工审核的情况
-
-- 首次建库页面
-- `policy` / 制度类文档带来的变更
-- 明显规范性内容，如“应当 / 必须 / 不得 / 禁止”
-- 证据较多、文本较长、范围较大的改动
-
-### 人工审核怎么做
-
-命令行：
+### LintAgent
 
 ```bash
-python -m wiki.updaters.review_publish --proposal-id <proposal_id>
-python -m wiki.updaters.review_publish --approve-all
+# 运行健康检查
+python -m App.agents.lint_agent
+
+# 修复问题
+python -m App.agents.lint_agent fix
+python -m App.agents.lint_agent fix --dry-run
 ```
 
-API：
+## 核心特性
 
-```bash
-curl http://127.0.0.1:8000/agent/proposals/pending
-curl -X POST http://127.0.0.1:8000/agent/proposals/<proposal_id>/approve
-curl -X POST http://127.0.0.1:8000/agent/proposals/approve-all
-```
+### IngestAgent
+- ✅ 自动发现待处理文档
+- ✅ 交互式文档选择
+- ✅ LLM 智能分析生成候选
+- ✅ 人工确认机制
+- ✅ 自动更新索引
 
-前端页面右侧也有“待审核提案”面板，可以直接查看：
+### QueryAgent
+- ✅ 全量 Wiki 加载
+- ✅ LLM 自主检索
+- ✅ 语义理解（非字面匹配）
+- ✅ 回答归档功能
 
-- 提案原因
-- 审核理由
-- 来源文档
-- `tool_trace`
-- 候选内容
-- 一键批准发布
+### LintAgent
+- ✅ 矛盾检测
+- ✅ 过时检测
+- ✅ 孤儿页检测
+- ✅ 缺失引用检测
+- ✅ 断裂链接检测
+- ✅ LLM 深度分析建议
 
-## 是否使用大语言模型
+## 页面类型
 
-用了，但默认不启用。
+- **overview**：摘要页，对主题的综合概述
+- **entity**：实体页，具体的人、组织、产品、法规等
+- **concept**：概念页，抽象概念、方法论、原则
+- **comparison**：比较页，对比两个或多个实体/概念
+- **index**：索引页，某类页面的目录和导航
+- **qa**：问答页，归档的优质问答
 
-当前 LLM 主要参与两个地方：
+## 输出目录
 
-1. Wiki 建库/更新时生成摘要和辅助审核
-2. Chatbot 在已检索到页面与证据后生成最终回答
+- `Raw/manifests/`：文档 manifest
+- `Tool/output/parsed/`：规范化解析结果
+- `wiki/output/pages/`：Wiki 页面 JSON
+- `App/candidates/`：候选页面（待审批）
 
-默认情况下：
-
-- `python -m App.agent` 不会调用 LLM
-- `/chat/query` 里如果 `use_llm=false`，也不会调用 LLM
-
-只有显式开启后，系统才会读取 `config/azure_gpt4o_config.json` 发起模型调用。
-
-## API 用法
-
-启动 API 与前端：
-
-```bash
-python -m App.api
-```
-
-启动后访问：
-
-- 前端首页：`http://127.0.0.1:8000/`
-- 健康检查：`http://127.0.0.1:8000/health`
-
-### 1. 聊天接口
-
-```bash
-curl -X POST http://127.0.0.1:8000/chat/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "文件控制和电子记录有哪些要求？",
-    "use_llm": false,
-    "top_k_pages": 5,
-    "top_k_citations": 8
-  }'
-```
-
-返回字段：
-
-- `answer`
-- `citations`
-- `matched_pages`
-- `confidence`
-- `used_llm`
-- `question`
-
-### 2. 上传并自动维护 Wiki
-
-```bash
-curl -X POST http://127.0.0.1:8000/agent/upload \
-  -F "file=@./sample.pdf" \
-  -F "use_llm=false" \
-  -F "auto_publish_low_risk=true" \
-  -F "auto_approve_small_changes=true" \
-  -F "workflow_engine=langgraph"
-```
-
-返回字段：
-
-- `status`
-- `file_name`
-- `stored_path`
-- `run_id`
-- `manifests_seen`
-- `documents_parsed`
-- `proposals_created`
-- `pages_published`
-- `pending_review_count`
-- `workflow_engine`
-
-### 3. 待审核提案列表
-
-```bash
-curl http://127.0.0.1:8000/agent/proposals/pending
-```
-
-### 4. 批准提案
-
-```bash
-curl -X POST http://127.0.0.1:8000/agent/proposals/<proposal_id>/approve
-```
-
-### 5. 批量批准全部待审核提案
-
-```bash
-curl -X POST http://127.0.0.1:8000/agent/proposals/approve-all
-```
-
-### 6. 重建聊天索引
-
-```bash
-curl -X POST http://127.0.0.1:8000/chat/reindex
-```
-
-## Chatbot 是怎么回答的
-
-Chatbot 不直接对 Markdown 做全文问答，而是：
-
-1. 检索 `wiki/output/pages/*.json`
-2. 找到关联的 `source_refs`
-3. 回查 `Tool/output/parsed/*.json` 中的原始片段
-4. 组织带引用的回答
-5. 如果 `use_llm=true`，再让 LLM 基于检索结果生成更自然的答案
-
-这意味着：
-
-- 问答结果可追溯
-- 引用片段可展示
-- 页面发布状态会直接影响检索结果
-- 待审核页面默认不会进入问答索引
-
-## 输出目录说明
-
-### 输入与中间结果
-
-- `Raw/`: 原始文档
-- `Raw/manifests/`: 文档 manifest
-- `Tool/output/parsed/`: 解析后的规范化文档
-
-### Agent 运行结果
-
-- `App/output/agent_state.json`: 文档维护状态
-- `App/output/runs/*.json`: 每次运行摘要
-
-### Wiki 结果
-
-- `wiki/output/pages/`: 页面 JSON，供导出和检索使用
-- `wiki/output/proposals/`: 待审核/已发布提案 JSON
-- `wiki/output/obsidian/`: Obsidian Markdown 导出
-
-## 开发与验证
-
-运行测试：
+## 验证
 
 ```bash
 python -m pytest -q
 ```
 
-当前仓库测试覆盖了：
+当前测试：53 passed
 
-- Agent 工作流
-- 上传接口
-- Chatbot MVP
-- 增量更新
-- Obsidian 导出
-- 文档解析流水线
+## 相关文档
 
-## 模块级入口
-
-```bash
-python -m Tool.pipelines.ingest --input Raw/
-python -m Tool.pipelines.parse --document-id <id>
-python -m wiki.builders.bootstrap --use-llm
-python -m wiki.updaters.incremental --document-id <id>
-python -m wiki.updaters.conflict_scan
-python -m wiki.updaters.review_publish --proposal-id <id>
-python -m wiki.updaters.review_publish --approve-all
-python -m wiki.exporters.obsidian
-python -m App.agent
-python -m App.api
-```
+- 架构定义：[`AGENTS.md`](AGENTS.md)
+- 使用说明：[`USAGE.md`](USAGE.md)

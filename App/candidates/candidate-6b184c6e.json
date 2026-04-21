@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-6b184c6e",
+  "page_type": "concept",
+  "title": "质量管理体系",
+  "content": {
+    "summary": "质量管理体系是企业为确保医疗器械质量安全而建立的系统，包括组织结构、职责、程序和资源等要素。",
+    "keywords": [
+      "质量管理体系",
+      "医疗器械",
+      "体系文件"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范概述",
+      "质量保证系统"
+    ],
+    "aliases": [
+      "质量体系"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.92,
+  "status": "approved"
+}
