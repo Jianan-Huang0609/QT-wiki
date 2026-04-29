@@ -48,6 +48,18 @@ export interface CandidatePage {
   source_refs: SourceRef[];
 }
 
+export interface IngestRunSummary {
+  run_id: string;
+  document_id: string;
+  file_name: string;
+  review_package_id: string;
+  candidate_ids: string[];
+  pending_review_count: number;
+  proposals_created: number;
+  use_llm: boolean;
+  created_at: string;
+}
+
 export interface ReviewPackageIssue {
   issue_id: string;
   issue_type: string;

@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-153455ff",
+  "page_type": "concept",
+  "title": "产品放行与留样管理",
+  "content": {
+    "summary": "产品放行与留样管理是确保医疗器械产品符合质量要求后方可上市的重要环节，包括放行条件、审核要求和留样观察等。",
+    "keywords": [
+      "产品放行",
+      "留样管理",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "质量控制"
+    ],
+    "aliases": [
+      "放行管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.85,
+  "status": "pending"
+}

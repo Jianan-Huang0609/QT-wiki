@@ -140,11 +140,14 @@ class ChatQueryRequest(BaseModel):
 class AgentUploadResponse(BaseModel):
     """Agent上传响应"""
     run_id: str = Field(..., description="运行ID")
+    document_id: str | None = Field(None, description="文档ID")
     file_name: str | None = Field(None, description="文件名")
     documents_parsed: int = Field(default=0, ge=0, description="解析文档数")
     proposals_created: int = Field(default=0, ge=0, description="创建提案数")
     pending: int = Field(default=0, ge=0, description="待处理数")
     pending_review_count: int = Field(default=0, ge=0, description="待审核数")
+    review_package_id: str | None = Field(None, description="本次审批包ID")
+    candidate_ids: list[str] = Field(default_factory=list, description="本次生成的候选页ID")
     workflow_engine: str = Field(default="IngestAgent", description="工作流引擎")
 
 

@@ -103,6 +103,11 @@ def ingest_review_packages() -> dict[str, list[dict[str, Any]]]:
     return {"items": items}
 
 
+@app.get("/api/ingest/runs")
+def ingest_runs(limit: int = 12) -> dict[str, list[dict[str, Any]]]:
+    return {"items": _load_recent_runs(limit=max(1, min(limit, 50)))}
+
+
 @app.post("/api/ingest/review-packages/{package_id}/decision")
 def decide_review_package(package_id: str, payload: ReviewPackageDecisionRequest) -> dict[str, Any]:
     existing = next((item for item in list_review_packages() if item.package_id == package_id), None)
@@ -278,12 +283,16 @@ async def agent_upload(
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     run_path = RUN_DIR / f"{run_id}.json"
     pending_count = len([item for item in candidates if item.status == "pending"])
+    review_package_id = f"review-{processed.document_id}"
+    candidate_ids = [item.candidate_id for item in candidates]
     run_path.write_text(
         json.dumps(
             {
                 "run_id": run_id,
                 "file_name": file.filename,
                 "document_id": processed.document_id,
+                "review_package_id": review_package_id,
+                "candidate_ids": candidate_ids,
                 "documents_parsed": 1,
                 "proposals_created": len(candidates),
                 "pages_published": 0,
@@ -298,7 +307,10 @@ async def agent_upload(
     )
     return AgentUploadResponse(
         run_id=run_id,
+        document_id=processed.document_id,
         file_name=file.filename,
+        review_package_id=review_package_id,
+        candidate_ids=candidate_ids,
         documents_parsed=1,
         proposals_created=len(candidates),
         pending=pending_count,
@@ -356,6 +368,40 @@ def _candidate_payload(candidate: Any) -> dict[str, Any]:
         "related_titles": candidate.content.get("related_titles", []),
         "source_refs": [{"document_id": item} for item in candidate.source_doc_ids],
     }
+
+
+def _load_recent_runs(limit: int = 12) -> list[dict[str, Any]]:
+    if not RUN_DIR.exists():
+        return []
+
+    runs: list[dict[str, Any]] = []
+    for path in sorted(RUN_DIR.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            print(f"[App.api] skip invalid run file {path.name}: {exc}")
+            continue
+
+        document_id = str(data.get("document_id", "")).strip()
+        run_id = str(data.get("run_id", path.stem)).strip() or path.stem
+        if not document_id:
+            continue
+        runs.append(
+            {
+                "run_id": run_id,
+                "document_id": document_id,
+                "file_name": str(data.get("file_name", "")),
+                "review_package_id": str(data.get("review_package_id", f"review-{document_id}")),
+                "candidate_ids": list(data.get("candidate_ids", [])),
+                "pending_review_count": int(data.get("pending_review_count", 0)),
+                "proposals_created": int(data.get("proposals_created", 0)),
+                "use_llm": bool(data.get("use_llm", False)),
+                "created_at": datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds"),
+            }
+        )
+        if len(runs) >= limit:
+            break
+    return runs
 
 
 def _review_package_payload(review_package: Any) -> dict[str, Any]:

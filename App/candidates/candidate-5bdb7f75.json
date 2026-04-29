@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-5bdb7f75",
+  "page_type": "concept",
+  "title": "质量管理体系",
+  "content": {
+    "summary": "质量管理体系是企业为确保产品质量符合要求而建立的相互关联或相互作用的一组要素，包括组织结构、职责、程序、过程和资源。",
+    "keywords": [
+      "质量管理",
+      "体系",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "质量保证"
+    ],
+    "aliases": [
+      "QMS"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.9,
+  "status": "pending"
+}

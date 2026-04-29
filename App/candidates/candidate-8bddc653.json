@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-8bddc653",
+  "page_type": "concept",
+  "title": "设计开发控制程序",
+  "content": {
+    "summary": "设计开发控制程序是医疗器械企业对产品设计开发全过程进行策划和控制的规范，包括输入、输出、验证、确认和变更管理等环节。",
+    "keywords": [
+      "设计开发",
+      "控制程序",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "质量管理体系"
+    ],
+    "aliases": [
+      "设计开发流程"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.88,
+  "status": "pending"
+}

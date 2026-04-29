@@ -2,6 +2,7 @@ import type {
   AgentSummary,
   CandidatePage,
   IndexStatus,
+  IngestRunSummary,
   LintIssue,
   MappingMatrixExport,
   QueryResult,
@@ -43,6 +44,11 @@ export async function getCandidates(): Promise<CandidatePage[]> {
 
 export async function getReviewPackages(): Promise<ReviewPackage[]> {
   const payload = await requestJson<{ items: ReviewPackage[] }>("/api/ingest/review-packages");
+  return payload.items;
+}
+
+export async function getIngestRuns(limit = 12): Promise<IngestRunSummary[]> {
+  const payload = await requestJson<{ items: IngestRunSummary[] }>(`/api/ingest/runs?limit=${limit}`);
   return payload.items;
 }
 
@@ -133,12 +139,22 @@ export async function runLintScan(): Promise<LintIssue[]> {
 export async function uploadDocument(
   file: File,
   useLlm: boolean
-): Promise<{ run_id: string; pending: number; pending_review_count: number }> {
+): Promise<{
+  run_id: string;
+  document_id?: string;
+  review_package_id?: string;
+  candidate_ids: string[];
+  pending: number;
+  pending_review_count: number;
+}> {
   const data = new FormData();
   data.append("file", file);
   data.append("use_llm", String(useLlm));
   const payload = await requestJson<{
     run_id: string;
+    document_id?: string;
+    review_package_id?: string;
+    candidate_ids?: string[];
     pending?: number;
     pending_review_count?: number;
   }>("/agent/upload", {
@@ -148,6 +164,9 @@ export async function uploadDocument(
   const pending = payload.pending ?? payload.pending_review_count ?? 0;
   return {
     run_id: payload.run_id,
+    document_id: payload.document_id,
+    review_package_id: payload.review_package_id,
+    candidate_ids: payload.candidate_ids ?? [],
     pending,
     pending_review_count: pending
   };

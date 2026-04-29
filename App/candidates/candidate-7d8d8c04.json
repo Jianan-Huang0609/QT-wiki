@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-7d8d8c04",
+  "page_type": "concept",
+  "title": "生产环境与设备管理",
+  "content": {
+    "summary": "生产环境与设备管理是医疗器械企业确保生产设施和设备符合质量要求的重要措施，包括厂房设计、设备校准和维护等。",
+    "keywords": [
+      "生产环境",
+      "设备管理",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "质量管理体系"
+    ],
+    "aliases": [
+      "设备与环境管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.86,
+  "status": "pending"
+}

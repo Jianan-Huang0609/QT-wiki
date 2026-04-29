@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   Archive,
   Bot,
@@ -9,6 +9,7 @@ import {
   FileSearch,
   Gauge,
   GitBranch,
+  History,
   LayoutDashboard,
   Loader2,
   MessageSquareText,
@@ -28,6 +29,7 @@ import {
   decideReviewPackageRelations,
   getCandidates,
   getDashboard,
+  getIngestRuns,
   getMappingMatrixExport,
   getReviewPackages,
   getSlidesOutlineExport,
@@ -43,6 +45,7 @@ import type {
   CandidatePage,
   Citation,
   IndexStatus,
+  IngestRunSummary,
   LintIssue,
   MappingMatrixExport,
   NavItem,
@@ -62,18 +65,30 @@ const navItems: NavItem[] = [
   { key: "settings", label: "设置", caption: "索引与模型", icon: Settings }
 ];
 
+interface ChatHistoryEntry {
+  id: string;
+  question: string;
+  result: QueryResult | null;
+  createdAt: string;
+  status: "success" | "error";
+  errorMessage?: string;
+}
+
 export default function App() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null);
   const [candidates, setCandidates] = useState<CandidatePage[]>([]);
   const [reviewPackages, setReviewPackages] = useState<ReviewPackage[]>([]);
+  const [ingestRuns, setIngestRuns] = useState<IngestRunSummary[]>([]);
   const [pages, setPages] = useState<WikiPage[]>([]);
   const [issues, setIssues] = useState<LintIssue[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
   const [selectedPageId, setSelectedPageId] = useState<string>("");
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [selectedCitationId, setSelectedCitationId] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState("");
   const [question, setQuestion] = useState("风险管理在质量管理体系里扮演什么角色？");
   const [useLlm, setUseLlm] = useState(true);
   const [topKPages, setTopKPages] = useState(5);
@@ -88,10 +103,18 @@ export default function App() {
   const [relationReviewedBy, setRelationReviewedBy] = useState("");
   const [mappingMatrixExport, setMappingMatrixExport] = useState<MappingMatrixExport | null>(null);
   const [slidesOutlineExport, setSlidesOutlineExport] = useState<SlidesOutlineExport | null>(null);
+  const [currentDocumentId, setCurrentDocumentId] = useState("");
+  const [ingestFilter, setIngestFilter] = useState<"current" | "pending" | "all">("pending");
 
   useEffect(() => {
     void refreshAll();
   }, []);
+
+  useEffect(() => {
+    if (activeView === "dashboard" || activeView === "query") {
+      void refreshDashboardData();
+    }
+  }, [activeView]);
 
   useEffect(() => {
     if (!selectedPackageId && reviewPackages.length) {
@@ -105,7 +128,25 @@ export default function App() {
     }
   }, [pages, selectedPageId]);
 
-  const selectedReviewPackage = reviewPackages.find((item) => item.package_id === selectedPackageId) ?? reviewPackages[0];
+  const visibleReviewPackages = reviewPackages.filter((item) => matchesIngestFilter(item.document_id, item.status, currentDocumentId, ingestFilter));
+  const workflowItems = navItems.filter((item) => item.key !== "query");
+  const currentFlowView = activeView === "query" ? "dashboard" : activeView;
+  const visibleCandidates = candidates.filter((item) => {
+    const primaryDocumentId = item.document_ids[0] ?? "";
+    return matchesIngestFilter(primaryDocumentId, item.status, currentDocumentId, ingestFilter);
+  });
+  const ingestFilterCounts = useMemo(
+    () => ({
+      current: reviewPackages.filter((item) => matchesIngestFilter(item.document_id, item.status, currentDocumentId, "current")).length,
+      pending: reviewPackages.filter((item) => matchesIngestFilter(item.document_id, item.status, currentDocumentId, "pending")).length,
+      all: reviewPackages.length,
+    }),
+    [reviewPackages, currentDocumentId]
+  );
+
+  const selectedReviewPackage = visibleReviewPackages.find((item) => item.package_id === selectedPackageId) ?? visibleReviewPackages[0];
+  const activeChatEntry = chatHistory.find((item) => item.id === selectedChatId) ?? chatHistory[0];
+  const activeChatResult = activeChatEntry?.result ?? queryResult;
   const relatedCandidates = selectedReviewPackage
     ? candidates.filter(
         (item) =>
@@ -115,7 +156,19 @@ export default function App() {
     : [];
   const selectedPage = pages.find((item) => item.page_id === selectedPageId) ?? pages[0];
   const selectedCitation =
-    queryResult?.citations.find((item) => item.citation_id === selectedCitationId) ?? queryResult?.citations[0];
+    activeChatResult?.citations.find((item) => item.citation_id === selectedCitationId) ?? activeChatResult?.citations[0];
+
+  useEffect(() => {
+    if (!visibleReviewPackages.length) {
+      if (selectedPackageId) {
+        setSelectedPackageId("");
+      }
+      return;
+    }
+    if (!visibleReviewPackages.some((item) => item.package_id === selectedPackageId)) {
+      setSelectedPackageId(visibleReviewPackages[0].package_id);
+    }
+  }, [visibleReviewPackages, selectedPackageId]);
 
   useEffect(() => {
     if (!selectedReviewPackage) {
@@ -135,22 +188,33 @@ export default function App() {
   const pendingPackageCount = reviewPackages.filter((item) => item.status === "pending_review").length;
 
   async function refreshAll() {
+    await Promise.all([refreshDashboardData(), refreshWorkspaceData()]);
+  }
+
+  async function refreshDashboardData() {
+    setBusy((current) => (current === "" ? "dashboard" : current));
+    try {
+      const dashboard = await getDashboard();
+      setAgents(dashboard.agents);
+      setIndexStatus(dashboard.index);
+      setIssues(dashboard.issues);
+    } catch (error) {
+      setToast(`dashboard: ${errorMessage(error)}`);
+    } finally {
+      setBusy((current) => (current === "dashboard" ? "" : current));
+    }
+  }
+
+  async function refreshWorkspaceData() {
     setBusy("refresh");
-    const [dashboard, candidateItems, reviewPackageItems, wikiItems] = await Promise.allSettled([
-      getDashboard(),
+    const [candidateItems, reviewPackageItems, wikiItems, runItems] = await Promise.allSettled([
       getCandidates(),
       getReviewPackages(),
-      getWikiPages()
+      getWikiPages(),
+      getIngestRuns()
     ]);
     const errors: string[] = [];
 
-    if (dashboard.status === "fulfilled") {
-      setAgents(dashboard.value.agents);
-      setIndexStatus(dashboard.value.index);
-      setIssues(dashboard.value.issues);
-    } else {
-      errors.push(`dashboard: ${errorMessage(dashboard.reason)}`);
-    }
     if (candidateItems.status === "fulfilled") {
       setCandidates(candidateItems.value);
     } else {
@@ -166,10 +230,15 @@ export default function App() {
     } else {
       errors.push(`wiki pages: ${errorMessage(wikiItems.reason)}`);
     }
+    if (runItems.status === "fulfilled") {
+      setIngestRuns(runItems.value);
+    } else {
+      errors.push(`runs: ${errorMessage(runItems.reason)}`);
+    }
 
     setBusy("");
     if (errors.length) {
-      setToast(`部分数据加载失败：${errors.join(" | ")}`);
+      setToast(`工作区数据加载失败：${errors.join(" | ")}`);
     }
   }
 
@@ -190,15 +259,40 @@ export default function App() {
     if (!question.trim()) {
       return;
     }
+    const nextQuestion = question.trim();
+    const chatId = createChatId();
     setBusy("query");
     try {
-      const result = await queryWiki(question.trim(), useLlm, topKPages);
+      const result = await queryWiki(nextQuestion, useLlm, topKPages);
       setQueryResult(result);
       setSelectedCitationId(result.citations[0]?.citation_id ?? "");
-      setActiveView("query");
-      setToast(result.used_llm ? "查询已使用 LLM。" : "查询未使用 LLM，当前返回为规则/结构化回退结果。");
+      setChatHistory((current) => [
+        {
+          id: chatId,
+          question: nextQuestion,
+          result,
+          createdAt: new Date().toISOString(),
+          status: "success",
+        },
+        ...current,
+      ]);
+      setSelectedChatId(chatId);
+      setQuestion("");
+      setToast(result.used_llm ? "Query used LLM." : "Query completed without LLM.");
     } catch (error) {
-      setToast(`查询失败：${errorMessage(error)}`);
+      setChatHistory((current) => [
+        {
+          id: chatId,
+          question: nextQuestion,
+          result: null,
+          createdAt: new Date().toISOString(),
+          status: "error",
+          errorMessage: errorMessage(error),
+        },
+        ...current,
+      ]);
+      setSelectedChatId(chatId);
+      setToast(`query failed: ${errorMessage(error)}`);
     } finally {
       setBusy("");
     }
@@ -212,7 +306,7 @@ export default function App() {
       } else {
         await rejectCandidate(candidateId);
       }
-      await refreshAll();
+      await refreshWorkspaceData();
       setToast(decision === "approve" ? "候选页已批准并发布到 Wiki。" : "候选页已拒绝。");
     } catch (error) {
       setToast(`候选页操作失败：${errorMessage(error)}`);
@@ -235,7 +329,7 @@ export default function App() {
         review_notes: decisionNotes,
         reviewed_by: decisionReviewedBy
       });
-      await refreshAll();
+      await refreshWorkspaceData();
       setToast(identityDecision === "confirmed" ? "文档身份已确认。" : "审批包已退回重判。");
     } catch (error) {
       setToast(`文档身份确认失败：${errorMessage(error)}`);
@@ -255,7 +349,7 @@ export default function App() {
         relation_review_notes: relationDecisionNotes,
         relation_reviewed_by: relationReviewedBy
       });
-      await refreshAll();
+      await refreshWorkspaceData();
       setToast(relationDecision === "confirmed" ? "关键关系已确认。" : "关系判断已退回重判。");
     } catch (error) {
       setToast(`关键关系确认失败：${errorMessage(error)}`);
@@ -298,8 +392,14 @@ export default function App() {
     setBusy("upload");
     try {
       const result = await uploadDocument(file, useLlm);
+      setCurrentDocumentId(result.document_id ?? "");
+      setIngestFilter("current");
+      if (result.review_package_id) {
+        setSelectedPackageId(result.review_package_id);
+      }
       setToast(`文档维护已提交：${result.run_id}，已生成审批包，待发布 ${result.pending} 个候选页。LLM ${useLlm ? "已开启" : "未开启"}。`);
-      await refreshAll();
+      await refreshWorkspaceData();
+      setActiveView("ingest");
     } catch (error) {
       setToast(`上传失败：${errorMessage(error)}`);
     } finally {
@@ -320,84 +420,76 @@ export default function App() {
     }
   }
 
+  function handleSelectRun(run: IngestRunSummary) {
+    setCurrentDocumentId(run.document_id);
+    setIngestFilter("current");
+    setSelectedPackageId(run.review_package_id || "");
+    setActiveView("ingest");
+    setToast(`已切换到运行 ${run.run_id}，当前聚焦文档 ${run.file_name || run.document_id}。`);
+  }
+
+  function handleClearCurrentSession() {
+    setCurrentDocumentId("");
+    setIngestFilter("pending");
+    setSelectedPackageId("");
+    setToast("已退出当前上传聚焦，工作台恢复为仅看待审核。");
+  }
+
+  function handleSelectChat(chatId: string) {
+    const entry = chatHistory.find((item) => item.id === chatId);
+    setSelectedChatId(chatId);
+    if (!entry) {
+      return;
+    }
+    setQuestion(entry.question);
+    setQueryResult(entry.result);
+    setSelectedCitationId(entry.result?.citations[0]?.citation_id ?? "");
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">
-            <DatabaseZap size={22} />
-          </div>
-          <div>
-            <strong>QT Wiki</strong>
-            <span>Knowledge Ops</span>
-          </div>
-        </div>
-
-        <nav className="nav-list">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                className={`nav-item ${activeView === item.key ? "active" : ""}`}
-                key={item.key}
-                type="button"
-                onClick={() => setActiveView(item.key)}
-              >
-                <Icon size={18} />
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.caption}</small>
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className={`index-chip ${indexStatus?.state ?? "missing"}`}>
-            <span />
-            <div>
-              <strong>{formatIndexState(indexStatus?.state)}</strong>
-              <small>{indexStatus?.lastBuilt ?? "尚未构建"}</small>
-            </div>
-          </div>
-          <button className="icon-text-button" type="button" onClick={() => void handleRebuildIndex()}>
-            {busy === "index" ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />}
-            重建索引
-          </button>
-        </div>
+        <HistoryRail
+          indexStatus={indexStatus}
+          useLlm={useLlm}
+          setUseLlm={setUseLlm}
+          topKPages={topKPages}
+          setTopKPages={setTopKPages}
+          chatHistory={chatHistory}
+          selectedChatId={selectedChatId}
+          onSelectChat={handleSelectChat}
+          onRebuildIndex={() => void handleRebuildIndex()}
+          busy={busy}
+        />
       </aside>
 
       <main className="main">
         <header className="topbar">
           <div>
             <p className="eyebrow">Raw / Parsed / Wiki / Index / Schema</p>
-            <h1>{titleForView(activeView)}</h1>
+            <h1>{titleForView(currentFlowView)}</h1>
           </div>
-          <div className="command-strip">
-            <label className="search-box">
-              <Search size={17} />
-              <input
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                placeholder="输入问题，回车执行索引召回"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    void handleQuerySubmit();
-                  }
-                }}
-              />
-            </label>
-            <button className="primary-action" type="button" onClick={() => void handleQuerySubmit()}>
-              {busy === "query" ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
-              查询
-            </button>
+          <div className="flow-tabs">
+            {workflowItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  className={`flow-tab ${currentFlowView === item.key ? "active" : ""}`}
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveView(item.key)}
+                >
+                  <Icon size={16} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </header>
 
         <section className="content-grid">
           <div className="workspace">
-            {activeView === "dashboard" && (
+            {currentFlowView === "dashboard" && (
               <DashboardView
                 agents={agents}
                 indexStatus={indexStatus}
@@ -408,14 +500,18 @@ export default function App() {
                 onNavigate={setActiveView}
               />
             )}
-            {activeView === "ingest" && (
+            {currentFlowView === "ingest" && (
               <IngestView
-                reviewPackages={reviewPackages}
-                candidates={candidates}
+                reviewPackages={visibleReviewPackages}
+                candidates={visibleCandidates}
                 selected={selectedReviewPackage}
                 selectedId={selectedPackageId}
                 relatedCandidates={relatedCandidates}
                 busy={busy}
+                ingestRuns={ingestRuns}
+                currentDocumentId={currentDocumentId}
+                ingestFilter={ingestFilter}
+                ingestFilterCounts={ingestFilterCounts}
                 decisionBusinessType={decisionBusinessType}
                 decisionEffectiveLevel={decisionEffectiveLevel}
                 decisionIsBinding={decisionIsBinding}
@@ -426,6 +522,9 @@ export default function App() {
                 relationDecisionNotes={relationDecisionNotes}
                 relationReviewedBy={relationReviewedBy}
                 onSelect={setSelectedPackageId}
+                onIngestFilterChange={setIngestFilter}
+                onSelectRun={handleSelectRun}
+                onClearCurrentSession={handleClearCurrentSession}
                 onDecisionBusinessType={setDecisionBusinessType}
                 onDecisionEffectiveLevel={setDecisionEffectiveLevel}
                 onDecisionIsBinding={setDecisionIsBinding}
@@ -439,27 +538,11 @@ export default function App() {
                 onUpload={(file) => void handleUpload(file)}
               />
             )}
-            {activeView === "wiki" && (
+            {currentFlowView === "wiki" && (
               <WikiView pages={pages} selected={selectedPage} selectedId={selectedPageId} onSelect={setSelectedPageId} />
             )}
-            {activeView === "query" && (
-              <QueryView
-                question={question}
-                setQuestion={setQuestion}
-                useLlm={useLlm}
-                setUseLlm={setUseLlm}
-                topKPages={topKPages}
-                setTopKPages={setTopKPages}
-                result={queryResult}
-                busy={busy}
-                onSubmit={() => void handleQuerySubmit()}
-                onSelectCitation={setSelectedCitationId}
-              />
-            )}
-            {activeView === "lint" && (
-              <LintView issues={issues} busy={busy} onScan={() => void handleLintScan()} />
-            )}
-            {activeView === "settings" && (
+            {currentFlowView === "lint" && <LintView issues={issues} busy={busy} onScan={() => void handleLintScan()} />}
+            {currentFlowView === "settings" && (
               <SettingsView
                 indexStatus={indexStatus}
                 useLlm={useLlm}
@@ -475,13 +558,18 @@ export default function App() {
           </div>
 
           <aside className="context-panel">
-            <ContextPanel
-              activeView={activeView}
+            <ChatbotPanel
+              question={question}
+              setQuestion={setQuestion}
+              activeChatEntry={activeChatEntry}
+              activeView={currentFlowView}
+              busy={busy}
+              selectedCitation={selectedCitation}
               selectedReviewPackage={selectedReviewPackage}
               selectedPage={selectedPage}
-              selectedCitation={selectedCitation}
-              queryResult={queryResult}
               issues={issues}
+              onSubmit={() => void handleQuerySubmit()}
+              onSelectCitation={setSelectedCitationId}
             />
           </aside>
         </section>
@@ -572,6 +660,10 @@ function IngestView({
   selectedId,
   relatedCandidates,
   busy,
+  ingestRuns,
+  currentDocumentId,
+  ingestFilter,
+  ingestFilterCounts,
   decisionBusinessType,
   decisionEffectiveLevel,
   decisionIsBinding,
@@ -582,6 +674,9 @@ function IngestView({
   relationDecisionNotes,
   relationReviewedBy,
   onSelect,
+  onIngestFilterChange,
+  onSelectRun,
+  onClearCurrentSession,
   onDecisionBusinessType,
   onDecisionEffectiveLevel,
   onDecisionIsBinding,
@@ -600,6 +695,14 @@ function IngestView({
   selectedId: string;
   relatedCandidates: CandidatePage[];
   busy: string;
+  ingestRuns: IngestRunSummary[];
+  currentDocumentId: string;
+  ingestFilter: "current" | "pending" | "all";
+  ingestFilterCounts: {
+    current: number;
+    pending: number;
+    all: number;
+  };
   decisionBusinessType: string;
   decisionEffectiveLevel: string;
   decisionIsBinding: boolean;
@@ -610,6 +713,9 @@ function IngestView({
   relationDecisionNotes: string;
   relationReviewedBy: string;
   onSelect: (id: string) => void;
+  onIngestFilterChange: (value: "current" | "pending" | "all") => void;
+  onSelectRun: (run: IngestRunSummary) => void;
+  onClearCurrentSession: () => void;
   onDecisionBusinessType: (value: string) => void;
   onDecisionEffectiveLevel: (value: string) => void;
   onDecisionIsBinding: (value: boolean) => void;
@@ -657,21 +763,87 @@ function IngestView({
             </button>
           </div>
         </div>
-        <div className="candidate-list">
-          {reviewPackages.map((reviewPackage) => (
-            <button
-              className={`candidate-row ${reviewPackage.package_id === selectedId ? "active" : ""}`}
-              key={reviewPackage.package_id}
-              type="button"
-              onClick={() => onSelect(reviewPackage.package_id)}
-            >
-              <div>
-                <strong>{reviewPackage.title}</strong>
-                <span>{reviewPackage.business_type} · {Math.round(reviewPackage.confidence * 100)}%</span>
-              </div>
-              <StatusBadge status={reviewPackage.status} />
+        <div className="filter-toolbar">
+          <div className="segmented-control">
+            <button className={ingestFilter === "current" ? "active" : ""} type="button" onClick={() => onIngestFilterChange("current")} disabled={!currentDocumentId}>
+              当前上传
             </button>
-          ))}
+            <button className={ingestFilter === "pending" ? "active" : ""} type="button" onClick={() => onIngestFilterChange("pending")}>
+              仅待审核
+            </button>
+            <button className={ingestFilter === "all" ? "active" : ""} type="button" onClick={() => onIngestFilterChange("all")}>
+              全部历史
+            </button>
+          </div>
+          <span className="filter-caption">
+            {ingestFilter === "current"
+              ? currentDocumentId || "当前还没有本次上传文档"
+              : ingestFilter === "pending"
+                ? "只看待审核审批包"
+                : "展示历史审批包"}
+          </span>
+        </div>
+        <div className="workspace-summary">
+          <span className="count-pill">当前 {ingestFilterCounts.current}</span>
+          <span className="count-pill">待审 {ingestFilterCounts.pending}</span>
+          {currentDocumentId ? (
+            <button className="mini-action" type="button" onClick={onClearCurrentSession}>
+              清除当前聚焦
+            </button>
+          ) : null}
+        </div>
+        <div className="recent-runs">
+          <div className="section-title compact">
+            <div className="section-title-label">
+              <History size={16} />
+              <h3>最近上传</h3>
+            </div>
+          </div>
+          <div className="run-list">
+            {ingestRuns.length ? (
+              ingestRuns.map((run) => (
+                <button
+                  className={`run-card ${run.document_id === currentDocumentId ? "active" : ""}`}
+                  key={run.run_id}
+                  type="button"
+                  onClick={() => onSelectRun(run)}
+                >
+                  <div className="run-card-top">
+                    <strong>{run.file_name || run.document_id}</strong>
+                    <span className={`status-badge ${run.pending_review_count > 0 ? "pending_review" : "published"}`}>
+                      {run.pending_review_count > 0 ? `${run.pending_review_count} 待审` : "已完成"}
+                    </span>
+                  </div>
+                  <span>{formatRunTimestamp(run.created_at)}</span>
+                  <span>
+                    {run.use_llm ? "LLM" : "Rule"} · {run.proposals_created} proposals
+                  </span>
+                </button>
+              ))
+            ) : (
+              <EmptyState title="暂无上传运行" text="上传文档后，这里会显示最近的处理记录。" />
+            )}
+          </div>
+        </div>
+        <div className="candidate-list">
+          {reviewPackages.length ? (
+            reviewPackages.map((reviewPackage) => (
+              <button
+                className={`candidate-row ${reviewPackage.package_id === selectedId ? "active" : ""}`}
+                key={reviewPackage.package_id}
+                type="button"
+                onClick={() => onSelect(reviewPackage.package_id)}
+              >
+                <div>
+                  <strong>{reviewPackage.title}</strong>
+                  <span>{reviewPackage.business_type} · {Math.round(reviewPackage.confidence * 100)}%</span>
+                </div>
+                <StatusBadge status={reviewPackage.status} />
+              </button>
+            ))
+          ) : (
+            <EmptyState title="当前过滤器下没有审批包" text="切换到“仅待审核”或“全部历史”，或先上传新文档。" />
+          )}
         </div>
       </section>
 
@@ -950,6 +1122,231 @@ function WikiView({
         ) : (
           <EmptyState title="没有页面" text="发布 Wiki 页面后即可浏览 Markdown 和来源。" />
         )}
+      </section>
+    </div>
+  );
+}
+
+function HistoryRail({
+  indexStatus,
+  useLlm,
+  setUseLlm,
+  topKPages,
+  setTopKPages,
+  chatHistory,
+  selectedChatId,
+  onSelectChat,
+  onRebuildIndex,
+  busy,
+}: {
+  indexStatus: IndexStatus | null;
+  useLlm: boolean;
+  setUseLlm: (value: boolean) => void;
+  topKPages: number;
+  setTopKPages: (value: number) => void;
+  chatHistory: ChatHistoryEntry[];
+  selectedChatId: string;
+  onSelectChat: (chatId: string) => void;
+  onRebuildIndex: () => void;
+  busy: string;
+}) {
+  return (
+    <div className="rail-stack">
+      <div className="brand">
+        <div className="brand-mark">
+          <DatabaseZap size={22} />
+        </div>
+        <div>
+          <strong>QT Wiki</strong>
+          <span>工作台</span>
+        </div>
+      </div>
+
+      <section className="rail-card">
+        <div className="section-title compact">
+          <div className="section-title-label">
+            <Settings size={16} />
+            <h3>快捷设置</h3>
+          </div>
+        </div>
+        <div className={`index-chip ${indexStatus?.state ?? "missing"}`}>
+          <span />
+          <div>
+            <strong>{formatIndexState(indexStatus?.state)}</strong>
+            <small>{indexStatus?.lastBuilt ?? "not built"}</small>
+          </div>
+        </div>
+        <label className="switch-line wide">
+          <input type="checkbox" checked={useLlm} onChange={(event) => setUseLlm(event.target.checked)} />
+          <span>启用 LLM</span>
+        </label>
+        <label className="rail-range">
+          <span>召回页面数</span>
+          <div>
+            <input type="range" min={1} max={10} value={topKPages} onChange={(event) => setTopKPages(Number(event.target.value))} />
+            <strong>{topKPages}</strong>
+          </div>
+        </label>
+        <button className="icon-text-button" type="button" onClick={onRebuildIndex}>
+          {busy === "index" ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />}
+          重建索引
+        </button>
+      </section>
+
+      <section className="rail-card rail-fill">
+        <div className="section-title compact">
+          <div className="section-title-label">
+            <History size={16} />
+            <h3>对话历史</h3>
+          </div>
+        </div>
+        <div className="history-list">
+          {chatHistory.length ? (
+            chatHistory.map((item) => (
+              <button
+                className={`history-item ${selectedChatId === item.id ? "active" : ""}`}
+                key={item.id}
+                type="button"
+                onClick={() => onSelectChat(item.id)}
+              >
+                <strong>{item.question}</strong>
+                <span>{formatRunTimestamp(item.createdAt)}</span>
+                <span>{item.status === "success" ? "已完成" : item.errorMessage || "失败"}</span>
+              </button>
+            ))
+          ) : (
+            <EmptyState title="暂无对话" text="在右侧 chatbot 提问后，这里会保留历史记录。" />
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ChatbotPanel({
+  question,
+  setQuestion,
+  activeChatEntry,
+  activeView,
+  busy,
+  selectedCitation,
+  selectedReviewPackage,
+  selectedPage,
+  issues,
+  onSubmit,
+  onSelectCitation,
+}: {
+  question: string;
+  setQuestion: (value: string) => void;
+  activeChatEntry?: ChatHistoryEntry;
+  activeView: ViewKey;
+  busy: string;
+  selectedCitation?: Citation;
+  selectedReviewPackage?: ReviewPackage;
+  selectedPage?: WikiPage;
+  issues: LintIssue[];
+  onSubmit: () => void;
+  onSelectCitation: (id: string) => void;
+}) {
+  const refs = activeView === "ingest" ? selectedReviewPackage?.source_refs : selectedPage?.source_refs;
+  const result = activeChatEntry?.result ?? null;
+  const trace = result?.trace?.length
+    ? result.trace
+    : activeView === "ingest" && selectedReviewPackage?.tool_trace.length
+      ? selectedReviewPackage.tool_trace
+      : ["load index", "rank pages", "load source refs"];
+
+  return (
+    <div className="chatbot-shell">
+      <section className="chatbot-card chatbot-composer">
+        <div className="composer-head">
+          <div>
+            <p className="eyebrow">Chatbot</p>
+            <h2>知识问答</h2>
+          </div>
+          {activeChatEntry ? <span className="chatbot-mode">{result?.used_llm ? "LLM" : activeChatEntry.status === "error" ? "失败" : "规则"}</span> : null}
+        </div>
+        <label className="chat-input-shell">
+          <Search size={16} />
+          <textarea
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            placeholder="围绕当前 wiki 和审批结果提问"
+          />
+        </label>
+        <button className="primary-action" type="button" onClick={onSubmit}>
+          {busy === "query" ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />}
+          提问
+        </button>
+      </section>
+
+      <section className="chatbot-card chatbot-answer">
+        {activeChatEntry ? (
+          activeChatEntry.status === "error" ? (
+            <EmptyState title="查询失败" text={activeChatEntry.errorMessage || "未知错误"} />
+          ) : result ? (
+            <>
+              <div className="answer-head">
+                <strong>{activeChatEntry.question}</strong>
+                <span>{result.used_llm ? "LLM" : "规则"}</span>
+              </div>
+              <RichAnswer text={result.answer} citations={result.citations} onSelectCitation={onSelectCitation} />
+              {result.structured_matches?.length ? (
+                <div className="review-list compact-list query-structured-list">
+                  {result.structured_matches.map((item) => (
+                    <article key={item.package_id} className="review-row">
+                      <strong>{item.title}</strong>
+                      <p>{item.business_type} · {item.object_count} objects · {item.relation_count} relations</p>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <EmptyState title="暂无答案" text="当前对话还没有可展示的回答。" />
+          )
+        ) : (
+          <EmptyState title="开始提问" text="右侧问答会始终保留，不会因为中间流程切换而中断。" />
+        )}
+      </section>
+
+      <section className="chatbot-card chatbot-context">
+        <div className="chatbot-context-block">
+          <p className="eyebrow">Evidence</p>
+          <h3>来源</h3>
+          {selectedCitation ? (
+            <SourceBlock
+              refItem={{
+                document_id: selectedCitation.document_id ?? "",
+                fragment_id: selectedCitation.fragment_id,
+                file_name: selectedCitation.file_name,
+                anchor_label: selectedCitation.anchor_label,
+                quote: selectedCitation.quote,
+              }}
+            />
+          ) : refs?.length ? (
+            refs.slice(0, 2).map((ref) => <SourceBlock key={`${ref.document_id}-${ref.fragment_id ?? ref.anchor_label}`} refItem={ref} />)
+          ) : (
+            <EmptyState title="暂无来源" text="点击回答里的引用，或在中间选择页面/审批包。" />
+          )}
+        </div>
+        <div className="chatbot-context-block">
+          <p className="eyebrow">Trace</p>
+          <h3>轨迹与风险</h3>
+          <div className="trace-list">
+            {trace.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+          <div className="risk-stack chat-risk-stack">
+            {issues.slice(0, 2).map((issue) => (
+              <div className="risk-row" key={issue.issue_id}>
+                <RiskBadge risk={issue.severity} />
+                <span>{issue.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   );
@@ -1309,10 +1706,33 @@ function titleForView(view: ViewKey) {
   return navItems.find((item) => item.key === view)?.label ?? "QT Wiki";
 }
 
+function createChatId() {
+  return `chat-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function formatRunTimestamp(value: string) {
+  return value.replace("T", " ").slice(0, 16);
+}
+
 function formatIndexState(state?: string) {
   if (state === "fresh") return "索引正常";
   if (state === "stale") return "索引过期";
   return "索引缺失";
+}
+
+function matchesIngestFilter(
+  documentId: string,
+  status: string,
+  currentDocumentId: string,
+  filter: "current" | "pending" | "all"
+) {
+  if (filter === "current") {
+    return Boolean(currentDocumentId) && documentId === currentDocumentId;
+  }
+  if (filter === "pending") {
+    return status === "pending" || status === "pending_review" || status === "identity_confirmed" || status === "pending_revision";
+  }
+  return true;
 }
 
 function errorMessage(error: unknown) {
@@ -1342,3 +1762,4 @@ function humanStatus(status: string) {
   };
   return map[status] ?? status;
 }
+

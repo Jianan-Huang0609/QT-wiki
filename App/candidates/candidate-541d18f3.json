@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-541d18f3",
+  "page_type": "concept",
+  "title": "文件和数据管理",
+  "content": {
+    "summary": "文件和数据管理是医疗器械企业对质量管理体系文件和记录进行控制的要求，包括文件的起草、修订、分发、保存和电子记录管理等。",
+    "keywords": [
+      "文件管理",
+      "数据管理",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "信息化系统"
+    ],
+    "aliases": [
+      "文档管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.88,
+  "status": "pending"
+}

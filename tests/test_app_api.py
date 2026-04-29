@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -311,6 +313,85 @@ def test_approve_candidate_requires_confirmed_identity():
         response = client.post("/api/ingest/candidates/candidate-1/approve")
 
     assert response.status_code == 409
+
+
+def test_agent_upload_returns_current_run_context():
+    from App.api import app
+
+    client = TestClient(app)
+    processed = SimpleNamespace(document_id="doc-test-0009", title="上传文档")
+    candidates = [
+        SimpleNamespace(candidate_id="candidate-1", status="pending"),
+        SimpleNamespace(candidate_id="candidate-2", status="pending"),
+    ]
+
+    with patch("App.api.process_document", return_value=processed), patch(
+        "App.api.IngestAgent.ingest", return_value=candidates
+    ):
+        response = client.post(
+            "/agent/upload",
+            files={"file": ("demo.pdf", b"fake pdf content", "application/pdf")},
+            data={"use_llm": "true"},
+        )
+
+    payload = response.json()
+    assert response.status_code == 200
+    assert payload["document_id"] == "doc-test-0009"
+    assert payload["review_package_id"] == "review-doc-test-0009"
+    assert payload["candidate_ids"] == ["candidate-1", "candidate-2"]
+
+
+def test_ingest_runs_endpoint_returns_recent_runs(tmp_path):
+    from App.api import app
+
+    client = TestClient(app)
+    run_dir = tmp_path / "runs"
+    run_dir.mkdir()
+    older_path = run_dir / "older.json"
+    newer_path = run_dir / "newer.json"
+    older_path.write_text(
+        json.dumps(
+            {
+                "run_id": "run-older",
+                "document_id": "doc-older",
+                "file_name": "older.pdf",
+                "review_package_id": "review-doc-older",
+                "candidate_ids": ["candidate-1"],
+                "pending_review_count": 1,
+                "proposals_created": 1,
+                "use_llm": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    newer_path.write_text(
+        json.dumps(
+            {
+                "run_id": "run-newer",
+                "document_id": "doc-newer",
+                "file_name": "newer.pdf",
+                "review_package_id": "review-doc-newer",
+                "candidate_ids": ["candidate-2", "candidate-3"],
+                "pending_review_count": 2,
+                "proposals_created": 2,
+                "use_llm": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    os.utime(older_path, (1000, 1000))
+    os.utime(newer_path, (2000, 2000))
+
+    with patch("App.api.RUN_DIR", run_dir):
+        response = client.get("/api/ingest/runs?limit=1")
+
+    payload = response.json()
+    assert response.status_code == 200
+    assert len(payload["items"]) == 1
+    assert payload["items"][0]["run_id"] == "run-newer"
+    assert payload["items"][0]["document_id"] == "doc-newer"
+    assert payload["items"][0]["review_package_id"] == "review-doc-newer"
+    assert payload["items"][0]["candidate_ids"] == ["candidate-2", "candidate-3"]
 
 
 def test_chat_query_includes_structured_matches():
