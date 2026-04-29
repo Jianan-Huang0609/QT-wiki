@@ -4,15 +4,27 @@
 
 本文件定义 QT Wiki 的知识结构和智能体行为规则，由开发者和 LLM 共同演化维护。
 
-## 三层架构
+## 分层架构
 
 ```
 Schema 层 (本文件)
     ↓ 定义结构
-Wiki 层 (摘要/实体/概念/比较/Index)
-    ↓ 引用来源
-Raw 层 (原文档)
+Index 层 (机器索引: pages.jsonl / terms.json / links.json / sources.jsonl)
+    ↓ 定位页面和来源
+Wiki 层 (Obsidian Markdown 页面 + JSON 兼容缓存)
+    ↓ 引用 fragment
+Parsed 层 (Canonical JSON: sections / fragments / anchors)
+    ↓ 来自解析
+Raw 层 (原文档和 manifest)
 ```
+
+## 存储职责
+
+- **Raw 层**: 保存原始 docx/pdf/pptx/xlsx 和 manifest，不直接参与问答生成。
+- **Parsed 层**: 保存规范化 Canonical JSON，是 fragment、section、anchor、checksum 的事实来源。
+- **Wiki 层**: 正式知识页以 Markdown 为主，必须可在 Obsidian 浏览；JSON 仅作为兼容缓存和程序接口。
+- **Index 层**: 自动生成，供 QueryAgent 召回使用，禁止人工编辑。
+- **Schema 层**: 定义页面类型、关系、Agent 工作流和质量底线。
 
 ## 页面类型定义
 
@@ -40,6 +52,45 @@ Raw 层 (原文档)
 - **用途**: 某类页面的目录和导航
 - **字段**: category, items, last_updated
 - **示例**: "所有法规实体索引", "概念索引"
+
+## Markdown 页面契约
+
+Wiki 页面必须使用 `YAML frontmatter + Markdown 正文`:
+
+```yaml
+---
+page_id: "质量管理体系"
+title: "质量管理体系"
+page_type: "concept"
+review_status: "published"
+page_version: 1
+updated_at: "2026-04-27T10:00:00"
+aliases:
+  - "QMS"
+linked_pages:
+  - "风险管理"
+source_refs:
+  - document_id: "doc-xxx"
+    fragment_id: "frag-12"
+    file_name: "规范.pdf"
+    anchor_label: "p.8"
+---
+```
+
+正文至少包含：
+
+1. `# 标题`
+2. `## 摘要`
+3. 一个或多个业务章节
+4. `## 关联页面`
+5. `## 引用来源`
+
+## 溯源规则
+
+- 每个事实性结论必须能追溯到至少一个 `source_ref`。
+- `source_ref` 至少包含 `document_id`；正式页面应优先包含 `fragment_id`、`file_name`、`anchor_label` 和短摘录 `quote`。
+- 页面正文可以使用脚注给人阅读，frontmatter 和 section `source_refs` 给程序读取。
+- LLM 不得把没有来源的推断写成事实；来源不足时必须标记为待确认。
 
 ## 关系定义
 
@@ -77,20 +128,22 @@ relations:
 - **职责**: 处理新文档入库
 - **工作流**:
   1. 读取 Raw 文档
-  2. 提取关键信息（实体、概念、摘要）
-  3. 生成候选页面（摘要页、实体页、概念页）
-  4. **暂停，等待人工讨论和确认**
-  5. 根据确认结果写入 Wiki
-  6. 更新 Index
+  2. 解析为 Canonical JSON，保留 fragments、sections、anchors
+  3. 提取关键信息（实体、概念、摘要）
+  4. 生成候选 Markdown 页面到 `wiki/output/obsidian/Proposals/`
+  5. **暂停，等待人工讨论和确认**
+  6. 根据确认结果发布到 `wiki/output/obsidian/Pages/`，并保留 JSON 兼容缓存
+  7. 更新机器 Index
 
 ### QueryAgent
 - **职责**: 回答用户问题
 - **工作流**:
   1. 理解用户问题
-  2. 搜索 Wiki 和 Raw
-  3. 综合信息生成回答
-  4. 提供引用来源
-  5. **询问用户是否将好答案归档为 Wiki 页面**
+  2. 搜索 Index 层，召回少量候选 Wiki 页面
+  3. 只加载候选页面及必要来源片段
+  4. 综合信息生成回答
+  5. 提供 Wiki 页面和 Raw fragment 引用来源
+  6. **询问用户是否将好答案归档为 Wiki 页面**
 
 ### LintAgent
 - **职责**: 维护 Wiki 健康
@@ -112,7 +165,10 @@ relations:
 2. **页面创建**: 必须通过 Agent 创建，禁止直接写入
 3. **人工确认**: Ingest 和 Lint 的关键操作需要人工确认
 4. **版本记录**: 每次 Schema 变更记录变更日志
+5. **索引生成**: Index 层只能由程序从 Wiki 层生成，不能人工修改
+6. **查询边界**: QueryAgent 不允许默认把整个 Wiki 正文传入 LLM
 
 ## 变更日志
 
+- 2026-04-27: 架构升级为 Raw / Parsed / Wiki / Index / Schema 五层；规定 Markdown Wiki、机器索引和事实溯源规则。
 - 2026-04-14: 初始 Schema 定义，定义 5 种页面类型和 3 个 Agent

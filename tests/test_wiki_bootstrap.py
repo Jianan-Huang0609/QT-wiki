@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -212,9 +212,9 @@ def test_bootstrap_llm_discovery_returns_dynamic_topics(tmp_dir):
 
         candidates = build_page_candidates(use_llm=True)
 
-    assert len(candidates) == 1
-    assert candidates[0].page.page_id == "产品放行"
-    assert "wiki.builders.bootstrap._llm_discover_page_blueprints" in candidates[0].tool_trace
+    assert len(candidates) >= 1
+    assert any(c.page.page_id == "产品放行" for c in candidates)
+    assert any("wiki.builders.bootstrap._llm_discover_page_blueprints" in c.tool_trace for c in candidates)
 
 
 def test_bootstrap_filters_pdf_header_and_catalog_noise():

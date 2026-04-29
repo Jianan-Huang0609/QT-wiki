@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-4114e7af",
+  "page_type": "concept",
+  "title": "产品追溯管理",
+  "content": {
+    "summary": "产品追溯管理是通过标识和记录确保医疗器械从原材料到成品的全过程可追溯，满足质量和法规要求。",
+    "keywords": [
+      "追溯管理",
+      "医疗器械",
+      "质量控制"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "医疗器械唯一标识"
+    ],
+    "aliases": [
+      "追溯体系"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.88,
+  "status": "pending"
+}

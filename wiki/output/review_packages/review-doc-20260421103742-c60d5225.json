@@ -1,0 +1,571 @@
+{
+  "package_id": "review-doc-20260421103742-c60d5225",
+  "document_id": "doc-20260421103742-c60d5225",
+  "status": "ready_to_publish",
+  "document_identity": {
+    "business_type": "external_mandatory",
+    "title": "医疗器械生产质量管理规范",
+    "version": "",
+    "effective_level": "external_mandatory",
+    "scope": "附件 / 医疗器械生产质量管理规范",
+    "is_binding": true,
+    "confidence": 0.85,
+    "source_refs": [
+      {
+        "document_id": "doc-20260421103742-c60d5225",
+        "fragment_id": "frag-1",
+        "file_name": "P020251106552222183224.docx",
+        "anchor_label": "para.1",
+        "quote": "附件"
+      },
+      {
+        "document_id": "doc-20260421103742-c60d5225",
+        "fragment_id": "frag-2",
+        "file_name": "P020251106552222183224.docx",
+        "anchor_label": "para.2",
+        "quote": "医疗器械生产质量管理规范"
+      },
+      {
+        "document_id": "doc-20260421103742-c60d5225",
+        "fragment_id": "frag-3",
+        "file_name": "P020251106552222183224.docx",
+        "anchor_label": "para.3",
+        "quote": "第一章总则"
+      }
+    ],
+    "notes": []
+  },
+  "identity_decision": "confirmed",
+  "confirmed_business_type": "external_mandatory",
+  "confirmed_effective_level": "external_mandatory",
+  "confirmed_is_binding": true,
+  "review_notes": "",
+  "reviewed_at": "2026-04-29T15:08:21",
+  "reviewed_by": "",
+  "relation_decision": "confirmed",
+  "relation_review_notes": "",
+  "relation_reviewed_at": "2026-04-29T15:08:41",
+  "relation_reviewed_by": "",
+  "evidence_refs": [
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-1",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.1",
+      "quote": "附件"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-2",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.2",
+      "quote": "医疗器械生产质量管理规范"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-3",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.3",
+      "quote": "第一章总则"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-4",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.4",
+      "quote": "第一条为了规范医疗器械生产质量管理，保障医疗器械安全、有效，根据《医疗器械监督管理条例》《医疗器械注册与备案管理办法》《体外诊断试剂注册与备案管理办法》《医疗器械生产监督管理办法》等，制定本规范。"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-5",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.5",
+      "quote": "第二条医疗器械注册人、备案人、受托生产企业（以下简称企业）在医疗器械设计开发、生产、质量控制与产品放行、销售和售后服务等活动过程中应当遵守本规范。"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-6",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.6",
+      "quote": "第三条企业应当按照本规范的要求，结合产品特点，建立健全与所生产医疗器械相适应的质量管理体系，并保证其有效运行。质量管理体系涵盖委托研发、委托生产、外协加工以及委托检验等。"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-7",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.7",
+      "quote": "第四条企业应当将风险管理理念贯穿于质量管理体系运行全过程，所采取的控制措施应当与产品存在的风险相适应。"
+    },
+    {
+      "document_id": "doc-20260421103742-c60d5225",
+      "fragment_id": "frag-8",
+      "file_name": "P020251106552222183224.docx",
+      "anchor_label": "para.8",
+      "quote": "第五条企业应当诚实守信。禁止任何虚假、欺骗行为。"
+    }
+  ],
+  "extracted_objects": [
+    {
+      "object_id": "obj-1",
+      "object_type": "process_step",
+      "name": "质量管理体系运行",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-6",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.6",
+          "quote": "第三条企业应当按照本规范的要求，结合产品特点，建立健全与所生产医疗器械相适应的质量管理体系，并保证其有效运行。质量管理体系涵盖委托研发、委托生产、外协加工以及委托检验等。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-7",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.7",
+          "quote": "第四条企业应当将风险管理理念贯穿于质量管理体系运行全过程，所采取的控制措施应当与产品存在的风险相适应。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-2",
+      "object_type": "process_step",
+      "name": "变更控制",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-23",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.23",
+          "quote": "第十条企业应当建立变更控制程序，根据变更对医疗器械安全性、有效性和质量可控性影响的风险程度和相关法规要求，确定变更管理类型，对变更进行评审，在实施前得到相应批准。必要时，应当对变更进行验证、确认，确保不因变更对产品的安全性、有效性和质量可控性产生不良影响。"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "medium"
+    },
+    {
+      "object_id": "obj-3",
+      "object_type": "process_step",
+      "name": "质量风险管理",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-25",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.25",
+          "quote": "第十二条企业应当建立质量风险管理制度，基于法律、法规、规章、标准、科学知识和经验等，评估产品实现全过程的质量风险，验证和实施质量风险控制措施，确保产品质量风险得到有效控制。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-26",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.26",
+          "quote": "第十三条企业应当收集产品全生命周期质量风险信息，定期实施质量风险管理回顾，确保质量风险管理措施持续有效。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-4",
+      "object_type": "role",
+      "name": "质量管理部门负责人",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-46",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.46",
+          "quote": "第二十条第二类、第三类医疗器械企业质量管理部门负责人应当具有医疗器械相关专业大学本科及以上学历或者中级及以上专业技术职称；第一类医疗器械企业质量管理部门负责人应当具有医疗器械相关专业大学专科及以上学历。质量管理部门负责人应当具备三年及以上医疗器械生产或者质量管理经验。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-47",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.47",
+          "quote": "质量管理部门负责人应当履行下列职责："
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-5",
+      "object_type": "role",
+      "name": "管理者代表",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-39",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.39",
+          "quote": "第十九条企业应当在高层管理人员中任命一名管理者代表。第二类、第三类医疗器械企业管理者代表应当具有医疗器械相关专业大学本科及以上学历或者中级及以上技术职称；第一类医疗器械企业管理者代表应当具有医疗器械相关专业大学专科及以上学历。管理者代表原则上应当具有三年及以上医疗器械质量管理或者生产、技术管理工作经验，熟悉产品生产和质量管理情况，具有良好履职能力。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-40",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.40",
+          "quote": "管理者代表至少应当履行下列职责:"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-6",
+      "object_type": "role",
+      "name": "产品放行审核人",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-32",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.32",
+          "quote": "第十七条企业应当配备与所生产产品相适应的关键岗位人员。关键岗位人员至少应当包括企业法定代表人、主要负责人、管理者代表、生产管理部门负责人、质量管理部门负责人和产品放行审核人等，企业主要负责人、管理者代表、生产管理部门负责人、质量管理部门负责人和产品放行审核人应当为企业的全职人员。关键岗位人员应当熟悉医疗器械相关法律法规，具有质量管理的实践经验，有能力对生产管理和质量管理中的实际问题作出正确的判断和处理。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-37",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.37",
+          "quote": "（四）确保管理者代表、质量管理部门负责人和产品放行审核人独立履行职责，不受企业内部因素干扰；"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-7",
+      "object_type": "deliverable",
+      "name": "质量管理体系文件",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-13",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.13",
+          "quote": "第九条企业应当建立质量保证系统并有完整的质量管理体系文件，保证质量管理体系有效运行。质量保证系统应当确保："
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-8",
+      "object_type": "deliverable",
+      "name": "变更评审记录",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-23",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.23",
+          "quote": "第十条企业应当建立变更控制程序，根据变更对医疗器械安全性、有效性和质量可控性影响的风险程度和相关法规要求，确定变更管理类型，对变更进行评审，在实施前得到相应批准。必要时，应当对变更进行验证、确认，确保不因变更对产品的安全性、有效性和质量可控性产生不良影响。"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "medium"
+    },
+    {
+      "object_id": "obj-9",
+      "object_type": "regulation_clause",
+      "name": "第一条",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-4",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.4",
+          "quote": "第一条为了规范医疗器械生产质量管理，保障医疗器械安全、有效，根据《医疗器械监督管理条例》《医疗器械注册与备案管理办法》《体外诊断试剂注册与备案管理办法》《医疗器械生产监督管理办法》等，制定本规范。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-10",
+      "object_type": "regulation_clause",
+      "name": "第二条",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-5",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.5",
+          "quote": "第二条医疗器械注册人、备案人、受托生产企业（以下简称企业）在医疗器械设计开发、生产、质量控制与产品放行、销售和售后服务等活动过程中应当遵守本规范。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-11",
+      "object_type": "regulation_clause",
+      "name": "第三条",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-6",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.6",
+          "quote": "第三条企业应当按照本规范的要求，结合产品特点，建立健全与所生产医疗器械相适应的质量管理体系，并保证其有效运行。质量管理体系涵盖委托研发、委托生产、外协加工以及委托检验等。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-12",
+      "object_type": "concept",
+      "name": "风险管理",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-7",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.7",
+          "quote": "第四条企业应当将风险管理理念贯穿于质量管理体系运行全过程，所采取的控制措施应当与产品存在的风险相适应。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-25",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.25",
+          "quote": "第十二条企业应当建立质量风险管理制度，基于法律、法规、规章、标准、科学知识和经验等，评估产品实现全过程的质量风险，验证和实施质量风险控制措施，确保产品质量风险得到有效控制。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-13",
+      "object_type": "concept",
+      "name": "变更控制",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-23",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.23",
+          "quote": "第十条企业应当建立变更控制程序，根据变更对医疗器械安全性、有效性和质量可控性影响的风险程度和相关法规要求，确定变更管理类型，对变更进行评审，在实施前得到相应批准。必要时，应当对变更进行验证、确认，确保不因变更对产品的安全性、有效性和质量可控性产生不良影响。"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "medium"
+    },
+    {
+      "object_id": "obj-14",
+      "object_type": "concept",
+      "name": "质量目标",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-11",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.11",
+          "quote": "第七条企业应当履行医疗器械质量安全主体责任，建立符合医疗器械质量管理要求的质量目标，将医疗器械产品安全、有效和质量可控的所有要求，系统地贯彻到质量管理体系运行全过程，确保质量目标被充分理解和有效实现。"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-12",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.12",
+          "quote": "第八条企业应当为实现质量目标配备足够并符合要求的人员、厂房设施和设备等资源。企业各级人员应当共同参与实现质量目标的各项活动并承担相应责任。"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "low"
+    }
+  ],
+  "extracted_relations": [
+    {
+      "relation_id": "rel-1",
+      "relation_type": "requires",
+      "from_object_id": "obj-9",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-4",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.4",
+          "quote": "第一条为了规范医疗器械生产质量管理，保障医疗器械安全、有效，根据《医疗器械监督管理条例》《医疗器械注册与备案管理办法》《体外诊断试剂注册与备案管理办法》《医疗器械生产监督管理办法》等，制定本规范。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": false
+    },
+    {
+      "relation_id": "rel-3",
+      "relation_type": "requires",
+      "from_object_id": "obj-11",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-6",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.6",
+          "quote": "第三条企业应当按照本规范的要求，结合产品特点，建立健全与所生产医疗器械相适应的质量管理体系，并保证其有效运行。质量管理体系涵盖委托研发、委托生产、外协加工以及委托检验等。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": false
+    },
+    {
+      "relation_id": "rel-4",
+      "relation_type": "constrains",
+      "from_object_id": "obj-12",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-7",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.7",
+          "quote": "第四条企业应当将风险管理理念贯穿于质量管理体系运行全过程，所采取的控制措施应当与产品存在的风险相适应。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": false
+    },
+    {
+      "relation_id": "rel-5",
+      "relation_type": "produces",
+      "from_object_id": "obj-2",
+      "to_object_id": "obj-8",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-23",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.23",
+          "quote": "第十条企业应当建立变更控制程序，根据变更对医疗器械安全性、有效性和质量可控性影响的风险程度和相关法规要求，确定变更管理类型，对变更进行评审，在实施前得到相应批准。必要时，应当对变更进行验证、确认，确保不因变更对产品的安全性、有效性和质量可控性产生不良影响。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": false
+    },
+    {
+      "relation_id": "rel-6",
+      "relation_type": "responsible_for",
+      "from_object_id": "obj-5",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-42",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.42",
+          "quote": "（二）建立健全与所生产产品相适应的质量管理体系并保持其有效运行；"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": false
+    },
+    {
+      "relation_id": "rel-8",
+      "relation_type": "implements",
+      "from_object_id": "obj-1",
+      "to_object_id": "obj-11",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-6",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.6",
+          "quote": "第三条企业应当按照本规范的要求，结合产品特点，建立健全与所生产医疗器械相适应的质量管理体系，并保证其有效运行。质量管理体系涵盖委托研发、委托生产、外协加工以及委托检验等。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": false
+    }
+  ],
+  "issues": [
+    {
+      "issue_id": "conflict-1",
+      "issue_type": "definition_inconsistency",
+      "detail": "变更控制在不同上下文中可能定义不一致，需进一步确认",
+      "severity": "medium",
+      "evidence_refs": []
+    }
+  ],
+  "human_questions": [
+    {
+      "question_id": "q-doc-identity",
+      "question": "这份文档的身份是否正确，属于法规、解读、内部受控文件、运行证据还是经验反馈？",
+      "rationale": "文档身份会直接决定后续结论能否作为要求使用。",
+      "target": "doc-20260421103742-c60d5225",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-1",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.1",
+          "quote": "附件"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-2",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.2",
+          "quote": "医疗器械生产质量管理规范"
+        }
+      ]
+    },
+    {
+      "question_id": "q-authority-boundary",
+      "question": "这份文档中的结论哪些可以视为要求，哪些只能视为解释或建议？",
+      "rationale": "需要先定权威边界，才能继续做跨文档映射。",
+      "target": "external_mandatory",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-1",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.1",
+          "quote": "附件"
+        },
+        {
+          "document_id": "doc-20260421103742-c60d5225",
+          "fragment_id": "frag-2",
+          "file_name": "P020251106552222183224.docx",
+          "anchor_label": "para.2",
+          "quote": "医疗器械生产质量管理规范"
+        }
+      ]
+    }
+  ],
+  "candidate_page_titles": [
+    "医疗器械生产质量管理规范",
+    "质量管理体系",
+    "风险管理理念",
+    "医疗器械生产环境要求",
+    "医疗器械生产过程控制",
+    "产品追溯管理",
+    "医疗器械不合格品管理",
+    "医疗器械委托生产管理",
+    "医疗器械售后服务管理",
+    "医疗器械设计开发管理"
+  ],
+  "created_at": "2026-04-29T15:07:54",
+  "updated_at": "2026-04-29T15:08:41",
+  "tool_trace": [
+    "App.agents.ingest_agent._build_review_package",
+    "App.agents.ingest_agent._classify_business_type"
+  ]
+}

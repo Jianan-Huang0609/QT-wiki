@@ -3,18 +3,25 @@
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from Tool.document_processor import ProcessedDocument
+    from Tool.contracts.canonical import CanonicalDocument
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE_DIR = REPO_ROOT / "App" / "candidates"
+CANDIDATE_MD_DIR = REPO_ROOT / "wiki" / "output" / "obsidian" / "Proposals"
 RAW_DIR = REPO_ROOT / "Raw"
 PARSED_DIR = REPO_ROOT / "Tool" / "output" / "parsed"
+
+MAX_LLM_FRAGMENTS = 48
+MAX_FRAGMENT_TEXT_LENGTH = 400
 
 
 @dataclass
@@ -35,6 +42,7 @@ class IngestAgent:
 
     def __init__(self):
         CANDIDATE_DIR.mkdir(parents=True, exist_ok=True)
+        CANDIDATE_MD_DIR.mkdir(parents=True, exist_ok=True)
         self.llm = None
 
     def _get_llm(self):
@@ -152,12 +160,15 @@ class IngestAgent:
             print(f"生成候选页面...")
             candidates = self._extract_candidates_with_llm(doc)
 
+            review_package = self._build_review_package(doc, candidates)
+            self._save_review_package(review_package)
+
             # 保存候选
             for candidate in candidates:
                 self._save_candidate(candidate)
 
             if candidates:
-                print(f"\n生成并保存 {len(candidates)} 个候选页面:")
+                print(f"\n生成并保存 {len(candidates)} 个候选页面，审批包: {review_package.package_id}")
                 for c in candidates:
                     print(f"  - [{c.page_type}] {c.title} (置信度: {c.confidence:.2f})")
             else:
@@ -276,11 +287,15 @@ class IngestAgent:
         else:
             candidates = self._extract_candidates_rule_based(doc)
 
+        review_package = self._build_review_package(doc, candidates)
+        self._save_review_package(review_package)
+
         for candidate in candidates:
             self._save_candidate(candidate)
 
         print(f"[IngestAgent] 文档 {doc.title} 已分析")
         print(f"[IngestAgent] 生成 {len(candidates)} 个候选页面")
+        print(f"[IngestAgent] 生成审批包 {review_package.package_id}")
 
         return candidates
 
@@ -382,6 +397,601 @@ class IngestAgent:
 
         return candidates
 
+    def _build_review_package(self, doc: "ProcessedDocument", candidates: list[CandidatePage], use_llm: bool = True):
+        from wiki.models import DocumentIdentity, HumanReviewQuestion, ReviewIssue, ReviewObject, ReviewPackage, ReviewRelation
+
+        canonical = self._load_canonical_document(doc.document_id)
+        evidence_refs = self._build_evidence_refs(canonical)
+        document_identity = DocumentIdentity(
+            business_type=self._classify_business_type(doc),
+            title=doc.title,
+            version=self._guess_version(doc),
+            effective_level=self._effective_level(doc),
+            scope=self._guess_scope(doc),
+            is_binding=self._is_binding_document(doc),
+            confidence=self._identity_confidence(doc),
+            source_refs=evidence_refs[:3],
+            notes=self._identity_notes(doc),
+        )
+
+        if use_llm:
+            extracted_objects = self._extract_objects_with_llm(canonical, document_identity)
+            if not extracted_objects:
+                extracted_objects = self._extract_review_objects_rule_based(canonical, candidates)
+            extracted_relations = self._extract_relations_with_llm(canonical, extracted_objects, document_identity)
+            if not extracted_relations:
+                extracted_relations = self._extract_relations_rule_based(canonical, extracted_objects, document_identity)
+            gaps, conflicts = self._analyze_gaps_with_llm(extracted_objects, extracted_relations, document_identity)
+        else:
+            extracted_objects = self._extract_review_objects_rule_based(canonical, candidates)
+            extracted_relations = self._extract_relations_rule_based(canonical, extracted_objects, document_identity)
+            gaps = []
+            conflicts = []
+
+        issues = self._build_review_issues(doc, document_identity, evidence_refs, conflicts)
+        human_questions = self._build_human_questions(doc, document_identity, evidence_refs, extracted_relations)
+        timestamp = datetime.now().isoformat(timespec="seconds")
+        return ReviewPackage(
+            package_id=f"review-{doc.document_id}",
+            document_id=doc.document_id,
+            status="pending_review",
+            document_identity=document_identity,
+            relation_decision="pending" if extracted_relations else "not_applicable",
+            evidence_refs=evidence_refs,
+            extracted_objects=extracted_objects,
+            extracted_relations=extracted_relations,
+            issues=issues,
+            human_questions=human_questions,
+            candidate_page_titles=[candidate.title for candidate in candidates],
+            created_at=timestamp,
+            updated_at=timestamp,
+            tool_trace=[
+                "App.agents.ingest_agent._build_review_package",
+                "App.agents.ingest_agent._classify_business_type",
+            ],
+        )
+
+    def _extract_objects_with_llm(self, canonical: "CanonicalDocument", document_identity) -> list:
+        from wiki.models import ReviewObject
+        from Tool.llm.prompts import build_object_extraction_prompt
+
+        fragments = self._prepare_fragments_for_llm(canonical)
+        if not fragments:
+            return []
+
+        prompt = build_object_extraction_prompt(
+            fragments_context=json.dumps(fragments, ensure_ascii=False),
+            document_identity=document_identity.to_dict(),
+        )
+
+        try:
+            response = self._get_llm().ask(prompt, max_tokens=3000, temperature=0.2)
+            data = self._parse_json_from_llm(response)
+            objects_data = data.get("objects", [])
+        except Exception as exc:
+            print(f"[IngestAgent] LLM 对象抽取失败: {exc}")
+            return []
+
+        result: list[ReviewObject] = []
+        for idx, obj_data in enumerate(objects_data):
+            evidence_refs = self._build_object_evidence_refs(canonical, obj_data.get("evidence_fragment_ids", []))
+            result.append(ReviewObject(
+                object_id=f"obj-{idx + 1}",
+                object_type=obj_data.get("object_type", "unknown"),
+                name=obj_data.get("name", "未命名"),
+                evidence_refs=evidence_refs,
+                confidence=float(obj_data.get("confidence", 0.7)),
+                review_risk=obj_data.get("review_risk", "medium"),
+            ))
+        return result[:48]
+
+    def _extract_relations_with_llm(self, canonical: "CanonicalDocument", objects: list, document_identity) -> list:
+        from wiki.models import ReviewRelation
+        from Tool.llm.prompts import build_relation_extraction_prompt
+
+        if not objects:
+            return []
+
+        fragments = self._prepare_fragments_for_llm(canonical)
+        objects_context = [{"object_type": o.object_type, "name": o.name} for o in objects[:32]]
+
+        prompt = build_relation_extraction_prompt(
+            objects_context=json.dumps(objects_context, ensure_ascii=False),
+            fragments_context=json.dumps(fragments, ensure_ascii=False),
+            document_identity=document_identity.to_dict(),
+        )
+
+        try:
+            response = self._get_llm().ask(prompt, max_tokens=3000, temperature=0.2)
+            data = self._parse_json_from_llm(response)
+            relations_data = data.get("relations", [])
+        except Exception as exc:
+            print(f"[IngestAgent] LLM 关系抽取失败: {exc}")
+            return []
+
+        result: list[ReviewRelation] = []
+        for idx, rel_data in enumerate(relations_data):
+            evidence_refs = self._build_object_evidence_refs(canonical, rel_data.get("evidence_fragment_ids", []))
+            from_object_id = self._resolve_object_id(objects, rel_data.get("from_object_id") or rel_data.get("from_object_name", ""))
+            to_object_id = self._resolve_object_id(objects, rel_data.get("to_object_id") or rel_data.get("to_object_name", ""))
+            if not from_object_id or not to_object_id:
+                continue
+            result.append(ReviewRelation(
+                relation_id=f"rel-{idx + 1}",
+                relation_type=rel_data.get("relation_type", "related_to"),
+                from_object_id=from_object_id,
+                to_object_id=to_object_id,
+                claim_type=rel_data.get("claim_type", "explanation"),
+                direction=rel_data.get("direction", "forward"),
+                evidence_refs=evidence_refs,
+                confidence=float(rel_data.get("confidence", 0.7)),
+                human_required=bool(rel_data.get("human_required", True)),
+            ))
+        return result[:32]
+
+    def _extract_relations_rule_based(self, canonical: "CanonicalDocument", objects: list, document_identity) -> list:
+        from wiki.models import ReviewRelation
+
+        object_lookup = {(item.object_type, item.name): item for item in objects}
+        relations_by_key: dict[tuple[str, str, str], ReviewRelation] = {}
+
+        for fragment in canonical.fragments:
+            fragment_objects = self._objects_from_fragment_text(fragment.text)
+            requirements = [name for obj_type, name, *_ in fragment_objects if obj_type == "requirement"]
+            steps = [name for obj_type, name, *_ in fragment_objects if obj_type == "process_step"]
+            records = [name for obj_type, name, *_ in fragment_objects if obj_type == "record"]
+            roles = [name for obj_type, name, *_ in fragment_objects if obj_type == "role"]
+            ref = {
+                "document_id": canonical.document.document_id,
+                "fragment_id": fragment.fragment_id,
+                "file_name": canonical.document.file_name,
+                "anchor_label": self._anchor_label(fragment.anchors),
+                "quote": fragment.text[:220],
+            }
+            claim_type = self._relation_claim_type(fragment.text, document_identity)
+
+            for requirement_name in requirements:
+                for step_name in steps:
+                    self._register_relation(
+                        relations_by_key,
+                        object_lookup,
+                        relation_type="requires",
+                        from_key=("requirement", requirement_name),
+                        to_key=("process_step", step_name),
+                        claim_type=claim_type,
+                        ref=ref,
+                        confidence=0.78,
+                    )
+
+            for step_name in steps:
+                for record_name in records:
+                    self._register_relation(
+                        relations_by_key,
+                        object_lookup,
+                        relation_type="produces",
+                        from_key=("process_step", step_name),
+                        to_key=("record", record_name),
+                        claim_type=claim_type,
+                        ref=ref,
+                        confidence=0.72,
+                    )
+
+            for role_name in roles:
+                for step_name in steps:
+                    self._register_relation(
+                        relations_by_key,
+                        object_lookup,
+                        relation_type="responsible_for",
+                        from_key=("role", role_name),
+                        to_key=("process_step", step_name),
+                        claim_type=claim_type,
+                        ref=ref,
+                        confidence=0.68,
+                    )
+
+        return list(relations_by_key.values())[:48]
+
+    def _register_relation(
+        self,
+        relations_by_key: dict,
+        object_lookup: dict,
+        *,
+        relation_type: str,
+        from_key: tuple[str, str],
+        to_key: tuple[str, str],
+        claim_type: str,
+        ref: dict,
+        confidence: float,
+    ) -> None:
+        from_object = object_lookup.get(from_key)
+        to_object = object_lookup.get(to_key)
+        if from_object is None or to_object is None:
+            return
+
+        key = (relation_type, from_object.object_id, to_object.object_id)
+        existing = relations_by_key.get(key)
+        if existing is None:
+            from wiki.models import ReviewRelation
+
+            relations_by_key[key] = ReviewRelation(
+                relation_id=f"rel-{len(relations_by_key) + 1}",
+                relation_type=relation_type,
+                from_object_id=from_object.object_id,
+                to_object_id=to_object.object_id,
+                claim_type=claim_type,
+                direction="forward",
+                evidence_refs=[ref],
+                confidence=confidence,
+                human_required=True,
+            )
+        elif len(existing.evidence_refs) < 5:
+            existing.evidence_refs.append(ref)
+
+    def _resolve_object_id(self, objects: list, raw_value: str) -> str:
+        value = str(raw_value).strip()
+        if not value:
+            return ""
+        for item in objects:
+            if item.object_id == value or item.name == value:
+                return item.object_id
+        return ""
+
+    def _relation_claim_type(self, text: str, document_identity) -> str:
+        compact = re.sub(r"\s+", "", text)
+        if "推荐" in compact or "建议" in compact:
+            return "recommendation"
+        if document_identity.is_binding or any(token in compact for token in ("应当", "必须", "不得")):
+            return "mandatory"
+        return "explanation"
+
+    def _analyze_gaps_with_llm(self, objects: list, relations: list, document_identity) -> tuple[list, list]:
+        from wiki.models import ReviewIssue
+        from Tool.llm.prompts import build_gap_analysis_prompt
+
+        if not objects:
+            return [], []
+
+        objects_context = [{"object_type": o.object_type, "name": o.name} for o in objects[:32]]
+        relations_context = [{"relation_type": r.relation_type, "from": r.from_object_id, "to": r.to_object_id, "claim_type": r.claim_type} for r in relations[:24]]
+
+        prompt = build_gap_analysis_prompt(
+            objects_context=json.dumps(objects_context, ensure_ascii=False),
+            relations_context=json.dumps(relations_context, ensure_ascii=False),
+            document_identity=document_identity.to_dict(),
+        )
+
+        try:
+            response = self._get_llm().ask(prompt, max_tokens=2000, temperature=0.2)
+            data = self._parse_json_from_llm(response)
+        except Exception as exc:
+            print(f"[IngestAgent] LLM 缺口分析失败: {exc}")
+            return [], []
+
+        gaps: list[ReviewIssue] = []
+        for gap_data in data.get("gaps", []):
+            gaps.append(ReviewIssue(
+                issue_id=f"gap-{len(gaps) + 1}",
+                issue_type=gap_data.get("gap_type", "missing_implementation"),
+                detail=gap_data.get("detail", ""),
+                severity=gap_data.get("severity", "medium"),
+            ))
+
+        conflicts: list[ReviewIssue] = []
+        for conflict_data in data.get("conflicts", []):
+            conflicts.append(ReviewIssue(
+                issue_id=f"conflict-{len(conflicts) + 1}",
+                issue_type=conflict_data.get("conflict_type", "boundary_ambiguity"),
+                detail=conflict_data.get("detail", ""),
+                severity=conflict_data.get("severity", "medium"),
+            ))
+
+        return gaps, conflicts
+
+    def _prepare_fragments_for_llm(self, canonical: "CanonicalDocument") -> list[dict]:
+        result: list[dict] = []
+        for fragment in canonical.fragments[:MAX_LLM_FRAGMENTS]:
+            text = fragment.text[:MAX_FRAGMENT_TEXT_LENGTH]
+            result.append({
+                "fragment_id": fragment.fragment_id,
+                "text": text,
+                "anchors": fragment.anchors,
+            })
+        return result
+
+    def _build_object_evidence_refs(self, canonical: "CanonicalDocument", fragment_ids: list[str]) -> list[dict]:
+        fragment_map = {f.fragment_id: f for f in canonical.fragments}
+        refs: list[dict] = []
+        for fid in fragment_ids[:5]:
+            fragment = fragment_map.get(fid)
+            if fragment:
+                refs.append({
+                    "document_id": canonical.document.document_id,
+                    "fragment_id": fragment.fragment_id,
+                    "file_name": canonical.document.file_name,
+                    "anchor_label": self._anchor_label(fragment.anchors),
+                    "quote": fragment.text[:220],
+                })
+        return refs
+
+    def _parse_json_from_llm(self, response: str) -> dict:
+        json_str = response
+        if "```json" in response:
+            json_str = response.split("```json")[1].split("```")[0]
+        elif "```" in response:
+            json_str = response.split("```")[1].split("```")[0]
+        return json.loads(json_str.strip())
+
+    def _extract_review_objects_rule_based(self, canonical: "CanonicalDocument", candidates: list[CandidatePage]):
+        from wiki.models import ReviewObject
+
+        objects_by_key: dict[tuple[str, str], ReviewObject] = {}
+
+        for fragment in canonical.fragments:
+            ref = {
+                "document_id": canonical.document.document_id,
+                "fragment_id": fragment.fragment_id,
+                "file_name": canonical.document.file_name,
+                "anchor_label": self._anchor_label(fragment.anchors),
+                "quote": fragment.text[:220],
+            }
+            for object_type, name, confidence, review_risk in self._objects_from_fragment_text(fragment.text):
+                key = (object_type, name)
+                existing = objects_by_key.get(key)
+                if existing is None:
+                    objects_by_key[key] = ReviewObject(
+                        object_id=f"obj-{len(objects_by_key) + 1}",
+                        object_type=object_type,
+                        name=name,
+                        evidence_refs=[ref],
+                        confidence=confidence,
+                        review_risk=review_risk,
+                    )
+                elif len(existing.evidence_refs) < 5:
+                    existing.evidence_refs.append(ref)
+
+        for candidate in candidates[:6]:
+            key = ("candidate_page", candidate.title)
+            if key not in objects_by_key:
+                objects_by_key[key] = ReviewObject(
+                    object_id=f"obj-{len(objects_by_key) + 1}",
+                    object_type="candidate_page",
+                    name=candidate.title,
+                    evidence_refs=[],
+                    confidence=candidate.confidence,
+                    review_risk="medium",
+                )
+
+        return list(objects_by_key.values())[:32]
+
+    def _objects_from_fragment_text(self, text: str) -> list[tuple[str, str, float, str]]:
+        objects: list[tuple[str, str, float, str]] = []
+        compact = re.sub(r"\s+", "", text)
+
+        if any(token in compact for token in ("应当", "必须", "不得")):
+            requirement_name = self._normalize_requirement_name(text)
+            if requirement_name:
+                objects.append(("requirement", requirement_name, 0.86, "high"))
+
+        for step in self._extract_process_steps(compact):
+            objects.append(("process_step", step, 0.72, "medium"))
+
+        for record_name in self._extract_records(text):
+            objects.append(("record", record_name, 0.7, "medium"))
+
+        for role_name in self._extract_roles(text):
+            objects.append(("role", role_name, 0.68, "medium"))
+
+        return objects
+
+    def _normalize_requirement_name(self, text: str) -> str:
+        normalized = re.sub(r"\s+", "", text)
+        match = re.match(r"(第[一二三四五六七八九十百零\d]+条[^。；]{0,80})", normalized)
+        if match:
+            return match.group(1)
+        return normalized[:80]
+
+    def _extract_process_steps(self, text: str) -> list[str]:
+        step_terms = [
+            "策划",
+            "输入",
+            "输出",
+            "验证",
+            "确认",
+            "转换",
+            "变更",
+            "评审",
+            "放行",
+            "采购",
+            "生产",
+            "检验",
+            "风险管理",
+            "设计开发",
+            "文件控制",
+        ]
+        return [term for term in step_terms if term in text]
+
+    def _extract_records(self, text: str) -> list[str]:
+        records: list[str] = []
+        patterns = [
+            r"([\u4e00-\u9fa5A-Za-z0-9]{2,24}(?:记录|报告|方案|台账|纪要|文档|表))",
+            r"(产品技术要求)",
+        ]
+        for pattern in patterns:
+            for match in re.findall(pattern, text):
+                name = str(match).strip("，。；、 ")
+                if len(name) >= 2 and name not in records:
+                    records.append(name)
+        return records[:8]
+
+    def _extract_roles(self, text: str) -> list[str]:
+        roles: list[str] = []
+        patterns = [
+            r"(企业)(?=应当)",
+            r"([\u4e00-\u9fa5]{2,12}(?:审核人|负责人|部门|委托方|受托方|人员))",
+        ]
+        for pattern in patterns:
+            for match in re.findall(pattern, text):
+                name = str(match).strip("，。；、 ")
+                if len(name) >= 2 and name not in roles:
+                    roles.append(name)
+        return roles[:6]
+
+    def _save_review_package(self, review_package) -> None:
+        from wiki.store import save_review_package
+
+        save_review_package(review_package)
+
+    def _load_canonical_document(self, document_id: str) -> "CanonicalDocument":
+        from Tool.contracts.canonical import load_canonical_document
+
+        return load_canonical_document(PARSED_DIR / f"{document_id}.json")
+
+    def _build_evidence_refs(self, canonical: "CanonicalDocument") -> list[dict]:
+        refs: list[dict] = []
+        for fragment in canonical.fragments[:8]:
+            anchor_label = self._anchor_label(fragment.anchors)
+            refs.append(
+                {
+                    "document_id": canonical.document.document_id,
+                    "fragment_id": fragment.fragment_id,
+                    "file_name": canonical.document.file_name,
+                    "anchor_label": anchor_label,
+                    "quote": fragment.text[:220],
+                }
+            )
+        return refs
+
+    def _build_review_issues(self, doc: "ProcessedDocument", identity, evidence_refs: list[dict], conflicts: list | None = None):
+        from wiki.models import ReviewIssue
+
+        issues: list[ReviewIssue] = []
+        if identity.business_type == "unknown":
+            issues.append(
+                ReviewIssue(
+                    issue_id="issue-identity-unknown",
+                    issue_type="identity_unclear",
+                    detail="文档身份暂未可靠识别，需要人工确认其权威边界。",
+                    severity="high",
+                    evidence_refs=evidence_refs[:2],
+                )
+            )
+        if doc.doc_type in {"guidance", "presentation"}:
+            issues.append(
+                ReviewIssue(
+                    issue_id="issue-guidance-boundary",
+                    issue_type="boundary_risk",
+                    detail="当前文档更像解读或培训材料，后续不得直接作为强制要求发布。",
+                    severity="high",
+                    evidence_refs=evidence_refs[:2],
+                )
+            )
+        if conflicts:
+            for conflict in conflicts:
+                issues.append(conflict)
+        return issues
+
+    def _build_human_questions(self, doc: "ProcessedDocument", identity, evidence_refs: list[dict], extracted_relations: list | None = None):
+        from wiki.models import HumanReviewQuestion
+
+        questions = [
+            HumanReviewQuestion(
+                question_id="q-doc-identity",
+                question="这份文档的身份是否正确，属于法规、解读、内部受控文件、运行证据还是经验反馈？",
+                rationale="文档身份会直接决定后续结论能否作为要求使用。",
+                target=doc.document_id,
+                evidence_refs=evidence_refs[:2],
+            ),
+            HumanReviewQuestion(
+                question_id="q-authority-boundary",
+                question="这份文档中的结论哪些可以视为要求，哪些只能视为解释或建议？",
+                rationale="需要先定权威边界，才能继续做跨文档映射。",
+                target=identity.business_type,
+                evidence_refs=evidence_refs[:2],
+            ),
+        ]
+
+        if extracted_relations:
+            high_risk_relations = [r for r in extracted_relations if r.human_required]
+            if high_risk_relations:
+                relation_names = ", ".join(f"{r.from_object_id} → {r.to_object_id}" for r in high_risk_relations[:3])
+                questions.append(
+                    HumanReviewQuestion(
+                        question_id="q-relation-mapping",
+                        question=f"以下关键映射是否成立：{relation_names}？",
+                        rationale="这些关系涉及法规与内部流程的映射，必须人工确认。",
+                        target="cross_document_mapping",
+                        evidence_refs=evidence_refs[:2],
+                    )
+                )
+
+        return questions
+
+    def _classify_business_type(self, doc: "ProcessedDocument") -> str:
+        title = f"{doc.title} {doc.file_name}".lower()
+        if any(token in title for token in ("sop", "pep", "wi", "程序", "规程", "流程", "模板")):
+            return "internal_controlled"
+        if any(token in title for token in ("capa", "偏差", "投诉", "audit", "finding", "复盘")):
+            return "feedback"
+        if any(token in title for token in ("记录", "报告", "纪要", "dhf", "放行")):
+            return "operational_evidence"
+        if any(token in title for token in ("解读", "指南", "讲义", "培训")) or doc.doc_type in {"guidance", "presentation"}:
+            return "external_reference"
+        if doc.doc_type in {"policy", "regulation", "standard"} or any(token in title for token in ("法规", "规范", "条例", "标准")):
+            return "external_mandatory"
+        return "unknown"
+
+    def _guess_version(self, doc: "ProcessedDocument") -> str:
+        for key in ("version", "revision", "edition"):
+            value = doc.metadata.get(key)
+            if value:
+                return str(value)
+        return ""
+
+    def _effective_level(self, doc: "ProcessedDocument") -> str:
+        business_type = self._classify_business_type(doc)
+        if business_type == "external_mandatory":
+            return "external_mandatory"
+        if business_type == "internal_controlled":
+            return "internal_controlled"
+        if business_type == "external_reference":
+            return "reference_only"
+        if business_type == "operational_evidence":
+            return "evidence_only"
+        if business_type == "feedback":
+            return "feedback_only"
+        return "unknown"
+
+    def _guess_scope(self, doc: "ProcessedDocument") -> str:
+        if doc.sections:
+            titles = [section.get("text", "")[:60] for section in doc.sections[:2]]
+            titles = [title for title in titles if title]
+            if titles:
+                return " / ".join(titles)
+        return ""
+
+    def _is_binding_document(self, doc: "ProcessedDocument") -> bool:
+        return self._classify_business_type(doc) in {"external_mandatory", "internal_controlled"}
+
+    def _identity_confidence(self, doc: "ProcessedDocument") -> float:
+        business_type = self._classify_business_type(doc)
+        return 0.85 if business_type != "unknown" else 0.45
+
+    def _identity_notes(self, doc: "ProcessedDocument") -> list[str]:
+        notes: list[str] = []
+        business_type = self._classify_business_type(doc)
+        if business_type == "external_reference":
+            notes.append("当前文档更像解释性材料，不能直接等同于法规正文。")
+        if business_type == "unknown":
+            notes.append("当前只能基于标题和解析类型做初判。")
+        return notes
+
+    def _anchor_label(self, anchors: dict) -> str:
+        if anchors.get("page") is not None:
+            return f"p.{anchors['page']}"
+        if anchors.get("paragraph_index") is not None:
+            return f"para.{anchors['paragraph_index']}"
+        return "source"
+
     def _save_candidate(self, candidate: CandidatePage):
         file_path = CANDIDATE_DIR / f"{candidate.candidate_id}.json"
         with open(file_path, "w", encoding="utf-8") as f:
@@ -394,10 +1004,51 @@ class IngestAgent:
                 "confidence": candidate.confidence,
                 "status": candidate.status,
             }, f, ensure_ascii=False, indent=2)
+        self._save_candidate_markdown(candidate)
+
+    def _save_candidate_markdown(self, candidate: CandidatePage):
+        source_refs = [{"document_id": did} for did in candidate.source_doc_ids]
+        lines = [
+            "---",
+            f'candidate_id: "{candidate.candidate_id}"',
+            f'page_type: "{candidate.page_type}"',
+            f'title: "{candidate.title}"',
+            f'status: "{candidate.status}"',
+            f"confidence: {candidate.confidence:.3f}",
+            "source_doc_ids:",
+            *[f'  - "{doc_id}"' for doc_id in candidate.source_doc_ids],
+            "---",
+            "",
+            f"# 候选页面: {candidate.title}",
+            "",
+            "## 审核状态",
+            "",
+            f"- 状态: {candidate.status}",
+            f"- 类型: {candidate.page_type}",
+            f"- 置信度: {candidate.confidence:.2f}",
+            "",
+            "## 摘要",
+            "",
+            candidate.content.get("summary", "暂无摘要。"),
+            "",
+            "## 关键词",
+            "",
+        ]
+        keywords = candidate.content.get("keywords", [])
+        lines.extend(f"- {keyword}" for keyword in keywords) if keywords else lines.append("暂无关键词。")
+        lines.extend(["", "## 关联页面", ""])
+        related_titles = candidate.content.get("related_titles", [])
+        lines.extend(f"- [[{title}]]" for title in related_titles) if related_titles else lines.append("暂无关联页面。")
+        lines.extend(["", "## 来源", ""])
+        lines.extend(f"- `{ref['document_id']}`" for ref in source_refs) if source_refs else lines.append("暂无来源。")
+        CANDIDATE_MD_DIR.mkdir(parents=True, exist_ok=True)
+        (CANDIDATE_MD_DIR / f"{candidate.candidate_id}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def approve_candidate(self, candidate_id: str) -> bool:
         candidate = self._load_candidate(candidate_id)
         if not candidate or candidate.status != "pending":
+            return False
+        if not self._can_publish_candidate(candidate):
             return False
 
         page_id = self._write_to_wiki(candidate)
@@ -428,6 +1079,31 @@ class IngestAgent:
 
         return CandidatePage(**data)
 
+    def _can_publish_candidate(self, candidate: CandidatePage) -> bool:
+        from wiki.store import list_review_packages
+
+        packages = [
+            item
+            for item in list_review_packages()
+            if item.document_id in candidate.source_doc_ids
+        ]
+        if not packages:
+            return True
+        return any(
+            item.identity_decision == "confirmed"
+            and (
+                item.relation_decision in {"confirmed", "not_applicable"}
+                or not getattr(item, "extracted_relations", [])
+            )
+            for item in packages
+        )
+
+    def can_approve_candidate(self, candidate_id: str) -> bool:
+        candidate = self._load_candidate(candidate_id)
+        if not candidate or candidate.status != "pending":
+            return False
+        return self._can_publish_candidate(candidate)
+
     def list_candidates(self) -> list[CandidatePage]:
         candidates = []
         for file_path in CANDIDATE_DIR.glob("*.json"):
@@ -437,8 +1113,9 @@ class IngestAgent:
         return candidates
 
     def _write_to_wiki(self, candidate: CandidatePage) -> str:
-        from wiki.store.files import PAGE_DIR
         from wiki.models.page import WikiPage, PageSection
+        from wiki.store.files import save_page
+        from wiki.indexing import build_index
         import datetime
 
         page_id = candidate.title.lower().replace(" ", "-").replace("_", "-")
@@ -485,12 +1162,9 @@ class IngestAgent:
             updated_at=datetime.datetime.now().isoformat(),
         )
 
-        PAGE_DIR.mkdir(parents=True, exist_ok=True)
-        file_path = PAGE_DIR / f"{page_id}.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(page.to_dict(), f, ensure_ascii=False, indent=2)
-
+        save_page(page)
         self._update_index(candidate.page_type, page_id, candidate.title)
+        build_index()
 
         return page_id
 
@@ -506,42 +1180,36 @@ class IngestAgent:
         if not index_title:
             return
 
-        from wiki.store.files import PAGE_DIR
+        from wiki.models.page import PageSection, WikiPage
+        from wiki.store.files import PAGE_DIR, load_page, save_page
         import datetime
 
         index_id = index_title.lower().replace(" ", "-")
         index_path = PAGE_DIR / f"{index_id}.json"
 
         if index_path.exists():
-            with open(index_path, "r", encoding="utf-8") as f:
-                index_page = json.load(f)
-            items = index_page.get("linked_pages", [])
+            index_page = load_page(index_id)
+            items = list(index_page.linked_pages)
             if page_id not in items:
                 items.append(page_id)
-                index_page["linked_pages"] = items
-                index_page["updated_at"] = datetime.datetime.now().isoformat()
-                with open(index_path, "w", encoding="utf-8") as f:
-                    json.dump(index_page, f, ensure_ascii=False, indent=2)
+                index_page.linked_pages = items
+                index_page.updated_at = datetime.datetime.now().isoformat()
+                save_page(index_page)
         else:
-            index_page = {
-                "page_id": index_id,
-                "title": index_title,
-                "page_type": "index",
-                "summary": f"所有{index_title}的目录和导航",
-                "sections": [{
-                    "heading": "页面列表",
-                    "content": f"- {title}",
-                    "source_refs": [],
-                }],
-                "aliases": [],
-                "source_refs": [],
-                "linked_pages": [page_id],
-                "review_status": "published",
-                "page_version": 1,
-                "updated_at": datetime.datetime.now().isoformat(),
-            }
-            with open(index_path, "w", encoding="utf-8") as f:
-                json.dump(index_page, f, ensure_ascii=False, indent=2)
+            index_page = WikiPage(
+                page_id=index_id,
+                title=index_title,
+                page_type="index",
+                summary=f"所有{index_title}的目录和导航",
+                sections=[PageSection(heading="页面列表", content=f"- [[{title}]]", source_refs=[])],
+                aliases=[],
+                source_refs=[],
+                linked_pages=[page_id],
+                review_status="published",
+                page_version=1,
+                updated_at=datetime.datetime.now().isoformat(),
+            )
+            save_page(index_page)
 
 
 if __name__ == "__main__":

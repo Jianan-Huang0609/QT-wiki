@@ -140,19 +140,21 @@ def build_page_candidates(*, use_llm: bool = False) -> list[PageChangeCandidate]
 
 def discover_page_blueprints(parsed_docs: list[CanonicalDocument], *, use_llm: bool = False) -> list[dict]:
     heuristic_blueprints = _heuristic_discover_page_blueprints(parsed_docs)
+    seed_blueprints = _seed_blueprints()
     if use_llm and parsed_docs:
         try:
             llm_blueprints = _llm_discover_page_blueprints(parsed_docs)
             merged = _merge_blueprints(llm_blueprints, heuristic_blueprints)
+            merged = _merge_blueprints(merged, seed_blueprints)
             if merged:
                 LOGGER.info("LLM 主题发现成功：LLM=%s，启发式补充后=%s", len(llm_blueprints), len(merged))
                 return merged
         except Exception:
             LOGGER.exception("LLM 主题发现失败，回退到启发式主题发现")
     if heuristic_blueprints:
-        return heuristic_blueprints
+        return _merge_blueprints(heuristic_blueprints, seed_blueprints)
     LOGGER.warning("未能从文档中发现有效主题，回退到静态蓝图")
-    return _clone_blueprints(PAGE_BLUEPRINTS)
+    return seed_blueprints
 
 
 def bootstrap_pages(*, use_llm: bool = False) -> list[WikiPage]:
@@ -456,7 +458,12 @@ def _finalize_blueprints(blueprints: list[dict]) -> list[dict]:
     for blueprint in blueprints:
         _merge_or_append_blueprint(sanitized, blueprint)
     sanitized.sort(key=lambda item: (-int(item.get("_score", 0)), len(item["title"]), item["title"]))
-    sanitized = sanitized[:DISCOVERY_LIMIT]
+
+    protected_page_ids = {item["page_id"] for item in _seed_blueprints()}
+    protected = [item for item in sanitized if item["page_id"] in protected_page_ids]
+    remaining = [item for item in sanitized if item["page_id"] not in protected_page_ids]
+    keep_remaining = max(0, DISCOVERY_LIMIT - len(protected))
+    sanitized = [*protected, *remaining[:keep_remaining]]
     if not sanitized:
         return []
 
@@ -565,6 +572,21 @@ def _is_valid_topic_title(title: str) -> bool:
 
 def _clone_blueprints(blueprints: list[dict]) -> list[dict]:
     return [deepcopy(blueprint) for blueprint in blueprints]
+
+
+def _seed_blueprints() -> list[dict]:
+    seeded: list[dict] = []
+    for blueprint in _clone_blueprints(PAGE_BLUEPRINTS):
+        seeded.append(
+            {
+                **blueprint,
+                "_score": max(int(blueprint.get("_score", 0)), 6),
+                "_tool_trace": _dedupe_texts(
+                    [*list(blueprint.get("_tool_trace", [])), "wiki.builders.bootstrap.PAGE_BLUEPRINTS"]
+                ),
+            }
+        )
+    return seeded
 
 
 def _dedupe_texts(values: list[str], exclude: set[str] | None = None) -> list[str]:

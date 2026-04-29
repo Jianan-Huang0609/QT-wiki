@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-8f81bf7d",
+  "page_type": "concept",
+  "title": "医疗器械生产过程控制",
+  "content": {
+    "summary": "医疗器械生产过程控制是指对生产过程中的原材料、中间产品、工艺参数等进行有效管理，以确保产品质量符合要求。",
+    "keywords": [
+      "生产控制",
+      "医疗器械",
+      "过程管理"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "质量控制"
+    ],
+    "aliases": [
+      "生产过程管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.9,
+  "status": "approved"
+}

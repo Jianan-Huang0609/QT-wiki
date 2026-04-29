@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-6ed955a1",
+  "page_type": "concept",
+  "title": "医疗器械不合格品管理",
+  "content": {
+    "summary": "不合格品管理是对生产过程中出现的不符合要求的原材料、中间产品和成品进行标识、隔离、评审和处理的过程。",
+    "keywords": [
+      "不合格品",
+      "质量管理",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "医疗器械生产质量管理规范",
+      "质量控制"
+    ],
+    "aliases": [
+      "不合格品控制"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.89,
+  "status": "approved"
+}

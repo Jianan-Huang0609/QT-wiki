@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate-cf6c6f99",
+  "page_type": "concept",
+  "title": "风险管理理念",
+  "content": {
+    "summary": "风险管理理念是贯穿医疗器械质量管理全过程的一种方法，用于识别、评估和控制产品生命周期中的质量风险。",
+    "keywords": [
+      "风险管理",
+      "质量控制",
+      "医疗器械"
+    ],
+    "related_titles": [
+      "质量管理体系",
+      "医疗器械生产质量管理规范"
+    ],
+    "aliases": [
+      "质量风险管理"
+    ]
+  },
+  "source_doc_ids": [
+    "doc-20260421103742-c60d5225"
+  ],
+  "confidence": 0.88,
+  "status": "pending"
+}

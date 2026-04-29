@@ -1,7 +1,15 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
+node_modules/
+dist/
+*.tsbuildinfo
+App/web/.npm-cache/
+App/web/vite-dev.*.log
+App/web/vite.config.js
+App/web/vite.config.d.ts
 Tool/output/parsed/*.json
 wiki/output/pages/*.json
 wiki/output/proposals/*.json
+wiki/output/index/
 App/output/
 wiki/output/obsidian/

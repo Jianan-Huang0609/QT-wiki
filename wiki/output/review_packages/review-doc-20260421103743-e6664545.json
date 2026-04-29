@@ -1,0 +1,508 @@
+{
+  "package_id": "review-doc-20260421103743-e6664545",
+  "document_id": "doc-20260421103743-e6664545",
+  "status": "ready_to_publish",
+  "document_identity": {
+    "business_type": "external_reference",
+    "title": "什么是质量管理体系",
+    "version": "",
+    "effective_level": "reference_only",
+    "scope": "⚫ 体系：相互关系或相互作用的一组要素 / ⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。",
+    "is_binding": false,
+    "confidence": 0.85,
+    "source_refs": [
+      {
+        "document_id": "doc-20260421103743-e6664545",
+        "fragment_id": "frag-3-1",
+        "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+        "anchor_label": "p.3",
+        "quote": "⚫ 体系：相互关系或相互作用的一组要素"
+      },
+      {
+        "document_id": "doc-20260421103743-e6664545",
+        "fragment_id": "frag-3-2",
+        "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+        "anchor_label": "p.3",
+        "quote": "⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。"
+      },
+      {
+        "document_id": "doc-20260421103743-e6664545",
+        "fragment_id": "frag-3-3",
+        "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+        "anchor_label": "p.3",
+        "quote": "⚫ 质量管理体系：管理体系中关于质量的部分。"
+      }
+    ],
+    "notes": [
+      "当前文档更像解释性材料，不能直接等同于法规正文。"
+    ]
+  },
+  "identity_decision": "confirmed",
+  "confirmed_business_type": "external_reference",
+  "confirmed_effective_level": "reference_only",
+  "confirmed_is_binding": false,
+  "review_notes": "",
+  "reviewed_at": "2026-04-29T14:55:16",
+  "reviewed_by": "11",
+  "relation_decision": "confirmed",
+  "relation_review_notes": "",
+  "relation_reviewed_at": "2026-04-29T14:55:44",
+  "relation_reviewed_by": "111",
+  "evidence_refs": [
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-3-1",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.3",
+      "quote": "⚫ 体系：相互关系或相互作用的一组要素"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-3-2",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.3",
+      "quote": "⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-3-3",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.3",
+      "quote": "⚫ 质量管理体系：管理体系中关于质量的部分。"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-3-4",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.3",
+      "quote": "注：管理体系要素规定了组织机构、岗位和职责、策划、运行、方针、惯 例、规则、理念、目标，以及实现这些目标的过程。"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-3-5",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.3",
+      "quote": "⚫ 过程：利用输入实现预期结果的相互关联或相互作用的一组活动。"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-4-1",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.4",
+      "quote": "⚫ GB_T 19000—2016 质量管理体系 基础和术语"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-4-2",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.4",
+      "quote": "⚫ GB/T 19001-2016 质量管理体系 要求；"
+    },
+    {
+      "document_id": "doc-20260421103743-e6664545",
+      "fragment_id": "frag-4-3",
+      "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+      "anchor_label": "p.4",
+      "quote": "⚫ GB/T 42061-2022 医疗器械 质量管理体系 用于法规的要求；"
+    }
+  ],
+  "extracted_objects": [
+    {
+      "object_id": "obj-1",
+      "object_type": "process_step",
+      "name": "过程管理",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-5-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.5",
+          "quote": "⚫ 通过过程管理保障提供的医疗器械安全有效；"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-5-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.5",
+          "quote": "⚫ 通过过程管理保障产品和质量管理符合法规要求；"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-5-4",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.5",
+          "quote": "⚫ 通过过程管理保障产品满足顾客需求。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-2",
+      "object_type": "role",
+      "name": "组织",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "组织应按照本标准或适用的法规要求建立、实施和保持需要形成文件的所有要求、程序、活动或安排。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-4",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "组织应将其在适用的法规要求下所承担的一个或多个角色形成文件。"
+        }
+      ],
+      "confidence": 0.85,
+      "review_risk": "medium"
+    },
+    {
+      "object_id": "obj-3",
+      "object_type": "deliverable",
+      "name": "质量管理体系文件",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "组织应按照本标准或适用的法规要求建立、实施和保持需要形成文件的所有要求、程序、活动或安排。"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-4",
+      "object_type": "regulation_clause",
+      "name": "4.1.1",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-5",
+      "object_type": "pep_node",
+      "name": "ISO 13485:2016 过程方法",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-7-10",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.7",
+          "quote": "• 过程方法：为使组织有效运作，需要识别和管理众多相互关联的过程。为达到预期结果 ，由过 程组成的系统在组织内的应用，连同这些过程的识别和相互作用，以及对这些过程的管理,称之 为“过程方法”。【来源: ISO 13485：2016，0.3过程方法】"
+        }
+      ],
+      "confidence": 0.9,
+      "review_risk": "low"
+    },
+    {
+      "object_id": "obj-6",
+      "object_type": "concept",
+      "name": "质量管理体系",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 质量管理体系：管理体系中关于质量的部分。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        }
+      ],
+      "confidence": 0.95,
+      "review_risk": "low"
+    }
+  ],
+  "extracted_relations": [
+    {
+      "relation_id": "rel-1",
+      "relation_type": "requires",
+      "from_object_id": "obj-4",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "组织应按照本标准或适用的法规要求建立、实施和保持需要形成文件的所有要求、程序、活动或安排。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": true
+    },
+    {
+      "relation_id": "rel-2",
+      "relation_type": "produces",
+      "from_object_id": "obj-1",
+      "to_object_id": "obj-3",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": true
+    },
+    {
+      "relation_id": "rel-3",
+      "relation_type": "responsible_for",
+      "from_object_id": "obj-2",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-7",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "a）考虑组织承担的角色来确定质量管理体系所需的过程及这些过程在整个组织中的应用；"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": true
+    },
+    {
+      "relation_id": "rel-4",
+      "relation_type": "implements",
+      "from_object_id": "obj-5",
+      "to_object_id": "obj-4",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-7-10",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.7",
+          "quote": "• 过程方法：为使组织有效运作，需要识别和管理众多相互关联的过程。为达到预期结果 ，由过 程组成的系统在组织内的应用，连同这些过程的识别和相互作用，以及对这些过程的管理,称之 为“过程方法”。【来源: ISO 13485：2016，0.3过程方法】"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": true
+    },
+    {
+      "relation_id": "rel-5",
+      "relation_type": "explains",
+      "from_object_id": "obj-6",
+      "to_object_id": "obj-4",
+      "claim_type": "explanation",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 质量管理体系：管理体系中关于质量的部分。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "4.1.1 组织应按照本标准的要求和适用的法规要求将质量管理体系形成文件并保持其有效性。"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": true
+    },
+    {
+      "relation_id": "rel-6",
+      "relation_type": "constrains",
+      "from_object_id": "obj-6",
+      "to_object_id": "obj-1",
+      "claim_type": "mandatory",
+      "direction": "forward",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-3",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 质量管理体系：管理体系中关于质量的部分。"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-9-7",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.9",
+          "quote": "a）考虑组织承担的角色来确定质量管理体系所需的过程及这些过程在整个组织中的应用；"
+        }
+      ],
+      "confidence": 0.85,
+      "human_required": true
+    }
+  ],
+  "issues": [
+    {
+      "issue_id": "issue-guidance-boundary",
+      "issue_type": "boundary_risk",
+      "detail": "当前文档更像解读或培训材料，后续不得直接作为强制要求发布。",
+      "severity": "high",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-1",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 体系：相互关系或相互作用的一组要素"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。"
+        }
+      ]
+    },
+    {
+      "issue_id": "conflict-1",
+      "issue_type": "definition_inconsistency",
+      "detail": "质量管理体系的定义在不同片段中表述不一致，可能导致理解偏差。",
+      "severity": "medium",
+      "evidence_refs": []
+    }
+  ],
+  "human_questions": [
+    {
+      "question_id": "q-doc-identity",
+      "question": "这份文档的身份是否正确，属于法规、解读、内部受控文件、运行证据还是经验反馈？",
+      "rationale": "文档身份会直接决定后续结论能否作为要求使用。",
+      "target": "doc-20260421103743-e6664545",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-1",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 体系：相互关系或相互作用的一组要素"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。"
+        }
+      ]
+    },
+    {
+      "question_id": "q-authority-boundary",
+      "question": "这份文档中的结论哪些可以视为要求，哪些只能视为解释或建议？",
+      "rationale": "需要先定权威边界，才能继续做跨文档映射。",
+      "target": "external_reference",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-1",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 体系：相互关系或相互作用的一组要素"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。"
+        }
+      ]
+    },
+    {
+      "question_id": "q-relation-mapping",
+      "question": "以下关键映射是否成立：obj-4 → obj-1, obj-1 → obj-3, obj-2 → obj-1？",
+      "rationale": "这些关系涉及法规与内部流程的映射，必须人工确认。",
+      "target": "cross_document_mapping",
+      "evidence_refs": [
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-1",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 体系：相互关系或相互作用的一组要素"
+        },
+        {
+          "document_id": "doc-20260421103743-e6664545",
+          "fragment_id": "frag-3-2",
+          "file_name": "新版《医疗器械生产质量管理规范》的理解和实施（最新）_20260415161430.pdf",
+          "anchor_label": "p.3",
+          "quote": "⚫ 管理体系；组织建立方针和目标以及实现这些目标的过程的相互 关系或相互作用的一组要素。"
+        }
+      ]
+    }
+  ],
+  "candidate_page_titles": [
+    "什么是质量管理体系 - 摘要"
+  ],
+  "created_at": "2026-04-29T14:36:36",
+  "updated_at": "2026-04-29T14:55:44",
+  "tool_trace": [
+    "App.agents.ingest_agent._build_review_package",
+    "App.agents.ingest_agent._classify_business_type"
+  ]
+}

@@ -79,3 +79,103 @@ class UpdateProposal:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(slots=True)
+class DocumentIdentity:
+    business_type: str
+    title: str
+    version: str = ""
+    effective_level: str = ""
+    scope: str = ""
+    is_binding: bool = False
+    confidence: float = 0.0
+    source_refs: list[dict[str, Any]] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ReviewObject:
+    object_id: str
+    object_type: str
+    name: str
+    evidence_refs: list[dict[str, Any]] = field(default_factory=list)
+    confidence: float = 0.0
+    review_risk: str = "medium"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ReviewRelation:
+    relation_id: str
+    relation_type: str
+    from_object_id: str
+    to_object_id: str
+    claim_type: str
+    direction: str = "forward"
+    evidence_refs: list[dict[str, Any]] = field(default_factory=list)
+    confidence: float = 0.0
+    human_required: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ReviewIssue:
+    issue_id: str
+    issue_type: str
+    detail: str
+    severity: str = "medium"
+    evidence_refs: list[dict[str, Any]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class HumanReviewQuestion:
+    question_id: str
+    question: str
+    rationale: str
+    target: str = ""
+    evidence_refs: list[dict[str, Any]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ReviewPackage:
+    package_id: str
+    document_id: str
+    status: str
+    document_identity: DocumentIdentity
+    identity_decision: str = "pending"
+    confirmed_business_type: str = ""
+    confirmed_effective_level: str = ""
+    confirmed_is_binding: bool | None = None
+    review_notes: str = ""
+    reviewed_at: str = ""
+    reviewed_by: str = ""
+    relation_decision: str = "pending"
+    relation_review_notes: str = ""
+    relation_reviewed_at: str = ""
+    relation_reviewed_by: str = ""
+    evidence_refs: list[dict[str, Any]] = field(default_factory=list)
+    extracted_objects: list[ReviewObject] = field(default_factory=list)
+    extracted_relations: list[ReviewRelation] = field(default_factory=list)
+    issues: list[ReviewIssue] = field(default_factory=list)
+    human_questions: list[HumanReviewQuestion] = field(default_factory=list)
+    candidate_page_titles: list[str] = field(default_factory=list)
+    created_at: str = ""
+    updated_at: str = ""
+    tool_trace: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
